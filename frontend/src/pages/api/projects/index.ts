@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { api, ApiError, type Project } from '../../../lib/api';
-import { errorUrl, redirectTo } from '../../../lib/http';
+import { errorUrl, redirectTo, okUrl } from '../../../lib/http';
 import { readProjectForm } from '../../../lib/projects-form';
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       token: locals.token,
       json: readProjectForm(form),
     });
-    return redirectTo(`/projects/${project.id}`);
+    return redirectTo(okUrl(`/projects/${project.id}`, 'Proyek dibuat'));
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal membuat proyek';
     return redirectTo(errorUrl('/projects/new', message));

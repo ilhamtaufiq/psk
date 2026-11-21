@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { api, ApiError, type ProjectFile } from '../../../../../lib/api';
-import { backTo, errorUrl, redirectTo, safeId } from '../../../../../lib/http';
+import { backTo, errorUrl, redirectTo, safeId, okUrl } from '../../../../../lib/http';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const id = safeId(params.id ?? null);
@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       token: locals.token,
       json: { url, requirement_id: requirementId },
     });
-    return redirectTo(back);
+    return redirectTo(okUrl(back, 'Berkas diambil dari Google Drive'));
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal mengambil berkas dari Google Drive';
     return redirectTo(errorUrl(back, message));

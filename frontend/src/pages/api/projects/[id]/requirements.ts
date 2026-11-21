@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { api, ApiError, type Requirement } from '../../../../lib/api';
-import { backTo, errorUrl, redirectTo, safeId } from '../../../../lib/http';
+import { backTo, errorUrl, redirectTo, safeId, okUrl } from '../../../../lib/http';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const id = safeId(params.id ?? null);
@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       token: locals.token,
       json: { title: String(form.get('title') ?? '') },
     });
-    return redirectTo(back);
+    return redirectTo(okUrl(back, 'Item kelengkapan ditambahkan'));
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal menambahkan item';
     return redirectTo(errorUrl(back, message));

@@ -35,6 +35,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
     <title>{title} · Proyek Selepas Kerja</title>
   </head>
   <body>
+    <div class="nav-progress" aria-hidden="true"></div>
     <div class="splash" aria-hidden="true">
       <img src="/splash.webp" width="360" height="640" alt="" decoding="async" />
     </div>
@@ -61,7 +62,19 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
                   <button class="btn ghost small" type="submit" data-busy="Keluar…">Keluar</button>
                 </form>
               </nav>
-              <span class="avatar" aria-label={`Masuk sebagai ${user.name}`}>{initial}</span>
+              <details class="account">
+                <summary class="avatar" aria-label={`Akun ${user.name}`}>{initial}</summary>
+                <div class="account-menu">
+                  <p class="account-name">{user.name}</p>
+                  <p class="account-mail">{user.email}</p>
+                  <form method="post" action="/api/logout">
+                    <button class="btn ghost block" type="submit" data-busy="Keluar…">
+                      <Icon name="logout" />
+                      Keluar
+                    </button>
+                  </form>
+                </div>
+              </details>
             </>
           )
         }
@@ -87,18 +100,33 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
             <span class="fab"><Icon name="plus" /></span>
             <span>Baru</span>
           </a>
-          <form method="post" action="/api/logout">
-            <button type="submit" data-busy="Keluar…">
-              <Icon name="logout" />
-              <span>Keluar</span>
-            </button>
-          </form>
         </nav>
       )
     }
 
+    <div class="toast" role="status" aria-live="polite" hidden></div>
+
+    <dialog class="confirm-dialog" aria-labelledby="confirm-title">
+      <form method="dialog" class="confirm-body">
+        <h2 id="confirm-title">Konfirmasi</h2>
+        <p class="confirm-msg"></p>
+        <div class="confirm-actions">
+          <button class="btn ghost" type="submit" value="cancel">Batal</button>
+          <button class="btn danger" type="submit" value="ok">Ya, lanjutkan</button>
+        </div>
+      </form>
+    </dialog>
+
     <script>
+      import '../scripts/ui';
+
       try { sessionStorage.setItem('psk-splash', '1'); } catch (e) {}
+
+      // Menu akun tertutup saat mengklik di luar.
+      document.addEventListener('click', (event) => {
+        const menu = document.querySelector<HTMLDetailsElement>('details.account');
+        if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+      });
 
       // Tombol bertanda data-busy langsung menampilkan status saat formulir dikirim.
       document.addEventListener('submit', (event) => {
@@ -109,15 +137,6 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
         button.disabled = true;
         button.dataset.label = button.textContent?.trim() ?? '';
         button.textContent = button.dataset.busy ?? 'Memproses…';
-      });
-
-      // Pilih berkas → langsung diunggah (input bertanda data-autoupload).
-      document.addEventListener('change', (event) => {
-        const input = event.target as HTMLInputElement;
-        if (!input.matches('input[data-autoupload]') || !input.files?.length) return;
-        const title = input.closest('label')?.querySelector('.dz-title');
-        if (title) title.textContent = 'Mengunggah…';
-        input.form?.requestSubmit();
       });
 
       // Dropdown urutan/jenis langsung mengirim formulir GET saat dipilih.

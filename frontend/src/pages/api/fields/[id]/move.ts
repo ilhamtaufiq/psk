@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { api, ApiError } from '../../../../lib/api';
-import { backTo, errorUrl, redirectTo, safeId } from '../../../../lib/http';
+import { backTo, errorUrl, redirectTo, safeId, okUrl } from '../../../../lib/http';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const id = safeId(params.id ?? null);
@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       token: locals.token,
       json: { direction },
     });
-    return redirectTo(back);
+    return redirectTo(okUrl(back, 'Urutan diperbarui'));
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal memindahkan informasi';
     return redirectTo(errorUrl(back, message));

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { api, ApiError } from '../../../../lib/api';
-import { errorUrl, redirectTo, safeId } from '../../../../lib/http';
+import { errorUrl, redirectTo, safeId, okUrl } from '../../../../lib/http';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const id = safeId(params.id ?? null);
@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       token: locals.token,
       json: { label: String(form.get('label') ?? '') },
     });
-    return redirectTo('/jenis');
+    return redirectTo(okUrl('/jenis', 'Nama jenis diubah'));
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal mengubah jenis';
     return redirectTo(errorUrl('/jenis', message));

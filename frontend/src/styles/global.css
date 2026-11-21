@@ -16,7 +16,7 @@
   --accent-hover: #4338ca;
   --accent-text: #ffffff;
   --accent-soft: #eceefe;
-  --danger: #d92d20;
+  --danger: #c62b1f;
   --danger-soft: #fdeceb;
   --ok: #067647;
   --ok-soft: #e6f6ee;
@@ -259,7 +259,7 @@ main.container {
   inset: auto 0 0 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: color-mix(in srgb, var(--surface) 94%, transparent);
@@ -2515,6 +2515,362 @@ a.kpi:hover {
   .splash {
     animation-delay: 0.6s;
     animation-duration: 0.2s;
+  }
+}
+
+/* ==========================================================================
+   UI/UX: toast, konfirmasi, progress navigasi, menu akun, navigasi bagian,
+   validasi inline, progress unggah, pencarian, empty state
+   ========================================================================== */
+
+/* Progress navigasi */
+.nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 2000;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-progress.running {
+  opacity: 1;
+  transform: scaleX(0.85);
+  transition: transform 9s cubic-bezier(0.1, 0.6, 0.3, 1), opacity 0.2s ease;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  z-index: 1500;
+  transform: translate(-50%, 16px);
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.toast[data-kind='error'] {
+  background: var(--danger);
+  color: #fff;
+}
+
+@media (min-width: 900px) {
+  .toast {
+    bottom: 24px;
+  }
+}
+
+/* Dialog konfirmasi */
+.confirm-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  width: min(400px, calc(100vw - 32px));
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+}
+
+.confirm-dialog::backdrop {
+  background: rgb(10 12 18 / 0.55);
+}
+
+.confirm-body {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  margin: 0;
+}
+
+.confirm-body h2 {
+  font-size: 1.1rem;
+}
+
+.confirm-msg {
+  color: var(--muted);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.confirm-actions .btn {
+  width: 100%;
+}
+
+/* Menu akun (mobile) */
+.account {
+  display: block;
+  position: relative;
+}
+
+.account > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.account > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 50;
+  display: grid;
+  gap: 10px;
+  width: min(260px, calc(100vw - 32px));
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+
+.account-menu form {
+  margin: 0;
+}
+
+.account-name {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.account-mail {
+  font-size: 0.82rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  margin-top: -6px;
+}
+
+@media (min-width: 900px) {
+  .account {
+    display: none;
+  }
+}
+
+/* Navigasi bagian (lengket di bawah topbar) */
+.section-nav {
+  position: sticky;
+  top: var(--top-h);
+  z-index: 15;
+  display: flex;
+  gap: 8px;
+  margin: 12px -16px 0;
+  padding: 10px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.section-nav a {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.section-nav a:hover,
+.section-nav a:focus-visible {
+  color: var(--text);
+  text-decoration: none;
+}
+
+#ringkasan,
+[id='informasi'],
+[id='kelengkapan'],
+[id='berkas'],
+[id='anggota'],
+[id='deskripsi'] {
+  scroll-margin-top: calc(var(--top-h) + 64px);
+}
+
+@media (min-width: 640px) {
+  .section-nav {
+    margin: 12px 0 0;
+    padding: 10px 0;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-bottom: 0;
+  }
+}
+
+/* Validasi inline */
+.field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+[aria-invalid='true'] {
+  border-color: var(--danger) !important;
+}
+
+/* Progress unggah */
+.upload-progress {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.upload-progress > span {
+  display: block;
+  height: 6px;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.15s linear;
+}
+
+.upload-progress {
+  position: relative;
+}
+
+.upload-progress::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  z-index: -1;
+}
+
+.upload-progress small {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* Pencarian */
+.search-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.search-field > svg {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px 10px 40px;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.search-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.filter-empty {
+  margin-top: 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+@media (min-width: 640px) {
+  .toolbar:has(.search-field) {
+    grid-template-columns: minmax(0, 1fr) 200px 200px;
+    max-width: 900px;
+  }
+}
+
+/* Ilustrasi empty state */
+.empty-art {
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  margin-bottom: 4px;
+  box-shadow: 0 10px 24px -12px rgb(79 70 229 / 0.45);
+}
+
+/* Target sentuh minimal 44px di perangkat layar sentuh */
+@media (pointer: coarse) {
+  .icon-btn,
+  .icon-btn.sm {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .btn.small {
+    min-height: 44px;
+  }
+
+  .section-nav a,
+  .tab {
+    min-height: 44px;
+  }
+}
+
+@media print {
+  .nav-progress,
+  .toast,
+  .confirm-dialog,
+  .section-nav,
+  .account {
+    display: none !important;
   }
 }
 

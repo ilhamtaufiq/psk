@@ -67,7 +67,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
   {
     !project ? (
       <div class="card empty">
-        <span class="empty-ico"><Icon name="folder" /></span>
+        <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
         <h2>Proyek tidak ditemukan</h2>
         <p>Proyek mungkin sudah dihapus atau bukan milik Anda.</p>
         <a href="/projects" class="btn ghost">Kembali ke daftar proyek</a>
@@ -78,11 +78,11 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
 
         {error && <div class="alert error" role="alert" style="margin-top:12px">{error}</div>}
 
-        <section class="card hero" style="margin-top:12px">
+        <section class="card hero" id="ringkasan" style="margin-top:12px">
           <div class="hero-top">
             <StatusBadge status={project.status} />
             <span class="type-pill">{project.project_type_label}</span>
-            {deadline && <span class={`deadline ${deadline.tone}`}>{deadline.text}</span>}
+            {deadline && project.status !== 'completed' && <span class={`deadline ${deadline.tone}`}>{deadline.text}</span>}
           </div>
 
           <h1>{project.name}</h1>
@@ -123,7 +123,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               method="post"
               action={`/api/projects/${project.id}/delete`}
               class="owner-only"
-              onsubmit="return confirm('Hapus proyek ini beserta seluruh berkasnya? Tindakan ini tidak bisa dibatalkan.')"
+              data-confirm="Hapus proyek ini beserta seluruh berkasnya? Tindakan ini tidak bisa dibatalkan."
             >
               <button class="btn danger" type="submit" data-busy="Menghapus…">
                 <Icon name="trash" />
@@ -132,6 +132,15 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             </form>
           </div>
         </section>
+
+        <nav class="section-nav" aria-label="Lompat ke bagian">
+          <a href="#ringkasan">Ringkasan</a>
+          <a href="#informasi">Informasi</a>
+          <a href="#kelengkapan">Kelengkapan</a>
+          <a href="#berkas">Berkas</a>
+          <a href="#anggota">Anggota</a>
+          <a href="#deskripsi">Deskripsi</a>
+        </nav>
 
         <dl class="facts" style="margin-top:12px">
           <div class="fact">
@@ -184,7 +193,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                         </select>
                       </form>
                       <form method="post" action={`/api/projects/${project.id}/members/${m.user_id}/delete`} class="owner-only"
-                        onsubmit={`return confirm('Keluarkan ${m.name.replace(/["'\\]/g, '')} dari proyek ini?')`}>
+                        data-confirm={`Keluarkan ${m.name.replace(/["'\\]/g, '')} dari proyek ini?`}>
                         <input type="hidden" name="anchor" value="#anggota" />
                         <button class="btn danger small" type="submit" data-busy="…">Keluarkan</button>
                       </form>
@@ -216,7 +225,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             {
               !isOwner && (
                 <form method="post" action={`/api/projects/${project.id}/members/${myId}/delete`} class="leave-only"
-                  onsubmit="return confirm('Keluar dari proyek ini? Anda tidak bisa melihatnya lagi kecuali diundang ulang.')">
+                  data-confirm="Keluar dari proyek ini? Anda tidak bisa melihatnya lagi kecuali diundang ulang.">
                   <input type="hidden" name="self" value="1" />
                   <button class="btn ghost" type="submit" data-busy="Keluar…">Keluar dari proyek</button>
                 </form>
@@ -277,7 +286,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                               method="post"
                               action={`/api/fields/${f.id}/delete`}
                               class="info-delete"
-                              onsubmit={`return confirm('Hapus informasi "${f.label.replace(/["'\\]/g, '')}"?')`}
+                              data-confirm={`Hapus informasi "${f.label.replace(/["'\\]/g, '')}"?`}
                             >
                               <input type="hidden" name="project_id" value={project.id} />
                               <input type="hidden" name="anchor" value="#informasi" />
@@ -408,7 +417,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                               <form
                                 method="post"
                                 action={`/api/requirements/${r.id}/delete`}
-                                onsubmit="return confirm('Hapus item ini dari daftar? Berkas yang sudah diunggah tetap disimpan di Berkas lainnya.')"
+                                data-confirm="Hapus item ini dari daftar? Berkas yang sudah diunggah tetap disimpan di Berkas lainnya."
                               >
                                 <input type="hidden" name="project_id" value={project.id} />
                                 <button class="btn danger small" type="submit" data-busy="Menghapus…">Hapus dari daftar</button>
@@ -437,7 +446,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                                     <form
                                       method="post"
                                       action={`/api/files/${f.id}/delete`} class="can-edit"
-                                      onsubmit={`return confirm('Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?')`}
+                                      data-confirm={`Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?`}
                                     >
                                       <input type="hidden" name="project_id" value={project.id} />
                                       <input type="hidden" name="anchor" value="#kelengkapan" />
@@ -509,7 +518,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           {
             looseFiles.length === 0 ? (
               <div class="card empty">
-                <span class="empty-ico"><Icon name="file" /></span>
+                <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
                 <h2>Belum ada berkas lain</h2>
                 <p>Berkas yang tidak masuk daftar kelengkapan akan tampil di sini.</p>
               </div>
@@ -540,7 +549,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                         <form
                           method="post"
                           action={`/api/files/${f.id}/delete`} class="can-edit"
-                          onsubmit={`return confirm('Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?')`}
+                          data-confirm={`Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?`}
                         >
                           <input type="hidden" name="project_id" value={project.id} />
                           <input type="hidden" name="anchor" value="#berkas" />

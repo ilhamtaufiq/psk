@@ -75,7 +75,12 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
     }
   </nav>
 
-  <form method="get" action="/projects" class="toolbar" aria-label="Urutkan dan filter jenis">
+  <form method="get" action="/projects" class="toolbar" aria-label="Cari, filter, dan urutkan proyek">
+    <label class="search-field">
+      <span class="sr-only">Cari nama proyek</span>
+      <Icon name="search" />
+      <input type="search" placeholder="Cari nama proyek…" autocomplete="off" data-filter-list="#project-grid" />
+    </label>
     {status && <input type="hidden" name="status" value={status} />}
     <label class="select-field">
       <span class="sr-only">Jenis proyek</span>
@@ -108,7 +113,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
   {
     projects.length === 0 ? (
       <div class="card empty">
-        <span class="empty-ico"><Icon name="folder" /></span>
+        <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
         <h2>{filterLabel ? 'Tidak ada proyek yang cocok' : 'Belum ada proyek'}</h2>
         <p>
           {filterLabel
@@ -118,7 +123,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
         <a href="/projects/new" class="btn primary"><Icon name="plus" />Buat proyek</a>
       </div>
     ) : (
-      <ul class="grid">
+      <ul class="grid" id="project-grid">
         {projects.map((p) => {
           const deadline = deadlineOf(p.due_date, p.status);
           const progress = timeProgress(p.start_date, p.due_date, p.status);
@@ -167,6 +172,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
           );
         })}
       </ul>
+      <p class="filter-empty" data-filter-empty hidden>Tidak ada proyek yang cocok dengan pencarian.</p>
     )
   }
 </Layout>

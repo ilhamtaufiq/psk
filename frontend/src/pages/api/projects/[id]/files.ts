@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { api, ApiError, type ProjectFile } from '../../../../lib/api';
-import { backTo, errorUrl, redirectTo, safeId } from '../../../../lib/http';
+import { backTo, errorUrl, redirectTo, safeId, okUrl } from '../../../../lib/http';
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       token: locals.token,
       body,
     });
-    return redirectTo(back);
+    return redirectTo(okUrl(back, 'Berkas diunggah'));
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal mengunggah berkas';
     return redirectTo(errorUrl(back, message));
