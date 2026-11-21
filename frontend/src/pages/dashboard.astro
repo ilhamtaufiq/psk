@@ -45,7 +45,10 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
           : `Ringkasan dari ${data.total_projects} proyek Anda.`}
       </p>
     </div>
-    <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Proyek baru</a>
+    <div class="actions">
+      <a href="/laporan" class="btn ghost"><Icon name="file" />Laporan</a>
+      <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Proyek baru</a>
+    </div>
   </section>
 
   <section class="kpis" aria-label="Ringkasan angka">

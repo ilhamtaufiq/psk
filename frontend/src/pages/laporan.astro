@@ -1,0 +1,161 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import StatusBadge from '../components/StatusBadge.astro';
+import {
+  api,
+  PROJECT_SORTS,
+  type ProjectTypeItem,
+  type ProjectStatus,
+  type ReportResponse,
+  STATUS_LABELS,
+} from '../lib/api';
+import { deadlineOf, formatDate } from '../lib/format';
+
+const token = Astro.locals.token as string;
+const params = Astro.url.searchParams;
+const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
+const status = statusKeys.includes(params.get('status') as ProjectStatus) ? (params.get('status') as string) : '';
+
+const types = await api<ProjectTypeItem[]>('/api/project-types', { token });
+const requestedType = params.get('type') ?? '';
+const type = types.some((t) => t.slug === requestedType) ? requestedType : '';
+
+const qs = new URLSearchParams();
+if (status) qs.set('status', status);
+if (type) qs.set('type', type);
+const report = await api<ReportResponse>(`/api/reports/projects${qs.toString() ? `?${qs}` : ''}`, { token });
+const { summary, projects } = report;
+const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
+const reqPercent = pct(summary.requirements_done, summary.requirements_total);
+const generated = formatDate(summary.generated_at, true);
+const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
+---
+
+<Layout title="Laporan">
+  <section class="page-head report-head">
+    <div>
+      <p class="eyebrow">Laporan</p>
+      <h1>Laporan semua proyek</h1>
+      <p class="muted small" style="margin-top:4px">Dibuat {generated} · mencakup proyek milik Anda dan yang dibagikan</p>
+    </div>
+    <div class="actions report-actions">
+      <a href={csvHref} class="btn ghost"><Icon name="download" />Unduh CSV</a>
+      <button type="button" class="btn primary" data-print><Icon name="file" />Cetak / PDF</button>
+    </div>
+  </section>
+
+  <form method="get" action="/laporan" class="toolbar report-filter" aria-label="Filter laporan">
+    <label class="select-field">
+      <span class="sr-only">Status</span>
+      <Icon name="list" />
+      <select name="status" data-autosubmit>
+        <option value="">Semua status</option>
+        {statusKeys.map((s) => <option value={s} selected={s === status}>{STATUS_LABELS[s]}</option>)}
+      </select>
+    </label>
+    <label class="select-field">
+      <span class="sr-only">Jenis</span>
+      <Icon name="tag" />
+      <select name="type" data-autosubmit>
+        <option value="">Semua jenis</option>
+        {types.map((t) => <option value={t.slug} selected={t.slug === type}>{t.label}</option>)}
+      </select>
+    </label>
+  </form>
+
+  <section class="kpis report-kpis" aria-label="Ringkasan laporan">
+    <div class="card kpi">
+      <span class="kpi-label">Proyek</span>
+      <span class="kpi-value">{summary.total}</span>
+      <span class="kpi-sub">{summary.completed} selesai</span>
+    </div>
+    <div class={`card kpi${summary.overdue > 0 ? ' kpi-alert' : ''}`}>
+      <span class="kpi-label">Terlambat</span>
+      <span class="kpi-value">{summary.overdue}</span>
+      <span class="kpi-sub">melewati tenggat</span>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Kelengkapan</span>
+      <span class="kpi-value">{reqPercent}%</span>
+      <span class="kpi-sub">{summary.requirements_done} dari {summary.requirements_total} item</span>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Berkas</span>
+      <span class="kpi-value">{summary.files_total}</span>
+      <span class="kpi-sub">file tersimpan</span>
+    </div>
+  </section>
+
+  <section class="card report-status" aria-label="Distribusi status">
+    <h2>Per status</h2>
+    <ul class="legend">
+      {summary.by_status.map((s) => (
+        <li>
+          <span class={`dot seg-${s.key}`} aria-hidden="true" />
+          <span class="legend-label">{s.label}</span>
+          <span class="legend-value">{s.count} <span class="muted">· {pct(s.count, summary.total)}%</span></span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>Daftar proyek</h2>
+      <span class="muted small">{projects.length} proyek · urut nama</span>
+    </div>
+
+    {
+      projects.length === 0 ? (
+        <div class="card empty">
+          <span class="empty-ico"><Icon name="folder" /></span>
+          <h2>Tidak ada proyek untuk laporan ini</h2>
+          <p>Ubah filter status atau jenis, atau buat proyek baru.</p>
+        </div>
+      ) : (
+        <div class="table-wrap card">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th scope="col">Nama</th>
+                <th scope="col">Jenis</th>
+                <th scope="col">Status</th>
+                <th scope="col">Tenggat</th>
+                <th scope="col">Kelengkapan</th>
+                <th scope="col">Berkas</th>
+                <th scope="col">Peran</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((p) => {
+                const d = deadlineOf(p.due_date, p.status);
+                return (
+                  <tr>
+                    <td><a href={`/projects/${p.id}`}>{p.name}</a></td>
+                    <td>{p.project_type_label}</td>
+                    <td><StatusBadge status={p.status} /></td>
+                    <td>
+                      {p.due_date ? formatDate(p.due_date) : '—'}
+                      {d && <span class={`deadline ${d.tone} cell-deadline`}>{d.text}</span>}
+                    </td>
+                    <td>{p.req_done}/{p.req_total}</td>
+                    <td>{p.file_count}</td>
+                    <td>{p.role === 'owner' ? 'Pemilik' : p.role === 'editor' ? 'Editor' : 'Viewer'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  </section>
+</Layout>
+
+<script>
+  document.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement).closest('button[data-print]');
+    if (btn) window.print();
+  });
+</script>

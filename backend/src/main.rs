@@ -7,6 +7,7 @@ mod files;
 mod health;
 mod members;
 mod projects;
+mod report;
 mod requirements;
 mod types;
 
@@ -75,6 +76,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::me))
         .route("/api/dashboard", get(dashboard::summary))
+        .route("/api/reports/projects", get(report::json))
+        .route("/api/reports/projects.csv", get(report::csv))
         .route("/api/project-types", get(types::list).post(types::create))
         .route("/api/project-types/{id}", put(types::update).delete(types::delete))
         .route(

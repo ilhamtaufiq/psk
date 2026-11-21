@@ -192,3 +192,26 @@ export interface MemberList {
   members: Member[];
   my_role: ProjectRole;
 }
+
+export interface ReportStatusCount {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface ReportSummary {
+  generated_at: string;
+  today: string;
+  total: number;
+  overdue: number;
+  completed: number;
+  by_status: ReportStatusCount[];
+  files_total: number;
+  requirements_total: number;
+  requirements_done: number;
+}
+
+export interface ReportResponse {
+  summary: ReportSummary;
+  projects: Project[];
+}

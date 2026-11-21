@@ -50,7 +50,7 @@ pub struct Project {
     pub role: String,
 }
 
-const PROJECT_SELECT: &str = "SELECT p.id, p.owner_id, p.name, p.description, p.status, p.project_type,
+pub const PROJECT_SELECT: &str = "SELECT p.id, p.owner_id, p.name, p.description, p.status, p.project_type,
     COALESCE((SELECT t.label FROM project_types t WHERE t.owner_id = p.owner_id AND t.slug = p.project_type), p.project_type) AS project_type_label,
     p.start_date, p.due_date, p.created_at, p.updated_at,
     (SELECT COUNT(*) FROM project_files f WHERE f.project_id = p.id) AS file_count,
