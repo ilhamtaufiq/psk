@@ -6,6 +6,7 @@ use axum::{
 };
 use chrono::{FixedOffset, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::{
     auth::AuthUser,
@@ -41,10 +42,18 @@ pub struct ReportSummary {
     pub requirements_done: i64,
 }
 
+/// Proyek di laporan, ditambah daftar item kelengkapan yang belum punya berkas.
+#[derive(Serialize)]
+pub struct ReportProject {
+    #[serde(flatten)]
+    pub project: Project,
+    pub missing_requirements: Vec<String>,
+}
+
 #[derive(Serialize)]
 pub struct ReportResponse {
     pub summary: ReportSummary,
-    pub projects: Vec<Project>,
+    pub projects: Vec<ReportProject>,
 }
 
 pub fn status_label(status: &str) -> &'static str {
@@ -108,6 +117,32 @@ async fn load(state: &AppState, user_id: &str, q: &ReportQuery) -> Result<Vec<Pr
         .await?)
 }
 
+/// Item kelengkapan yang belum punya berkas, dikelompokkan per proyek (urut dibuat).
+async fn missing_requirements(
+    state: &AppState,
+    user_id: &str,
+) -> Result<HashMap<String, Vec<String>>, AppError> {
+    let rows: Vec<(String, String)> = sqlx::query_as(
+        "SELECT r.project_id, r.title
+         FROM project_requirements r
+         WHERE r.project_id IN (
+             SELECT id FROM projects
+             WHERE owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))
+           AND NOT EXISTS (SELECT 1 FROM project_files f WHERE f.requirement_id = r.id)
+         ORDER BY r.created_at ASC",
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .fetch_all(&state.pool)
+    .await?;
+
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    for (project_id, title) in rows {
+        map.entry(project_id).or_default().push(title);
+    }
+    Ok(map)
+}
+
 fn summarize(projects: &[Project]) -> ReportSummary {
     let today = today_wib();
     let statuses = ["planning", "active", "on_hold", "completed"];
@@ -139,6 +174,14 @@ pub async fn json(
 ) -> Result<Json<ReportResponse>, AppError> {
     let projects = load(&state, &user.id, &q).await?;
     let summary = summarize(&projects);
+    let mut missing = missing_requirements(&state, &user.id).await?;
+    let projects = projects
+        .into_iter()
+        .map(|p| {
+            let missing_requirements = missing.remove(&p.id).unwrap_or_default();
+            ReportProject { project: p, missing_requirements }
+        })
+        .collect();
     Ok(Json(ReportResponse { summary, projects }))
 }
 
@@ -164,8 +207,10 @@ pub async fn csv(
     let today = today_wib();
 
     let mut out = String::from("\u{feff}");
-    out.push_str("Nama,Jenis,Status,Peran Anda,Tanggal mulai,Tanggal selesai,Terlambat,Kelengkapan,Jumlah berkas\r\n");
+    out.push_str("Nama,Jenis,Status,Peran Anda,Tanggal mulai,Tanggal selesai,Terlambat,Kelengkapan,Belum ada berkas,Jumlah berkas\r\n");
+    let mut missing = missing_requirements(&state, &user.id).await?;
     for p in &projects {
+        let missing_items = missing.remove(&p.id).unwrap_or_default().join("; ");
         let row = [
             csv_cell(&p.name),
             csv_cell(&p.project_type_label),
@@ -175,6 +220,7 @@ pub async fn csv(
             csv_cell(p.due_date.as_deref().unwrap_or("")),
             csv_cell(if is_overdue(p, today) { "Ya" } else { "Tidak" }),
             csv_cell(&format!("{}/{}", p.req_done, p.req_total)),
+            csv_cell(&missing_items),
             csv_cell(&p.file_count.to_string()),
         ];
         out.push_str(&row.join(","));

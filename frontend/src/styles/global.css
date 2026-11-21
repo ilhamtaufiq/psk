@@ -2046,7 +2046,7 @@ a.kpi:hover {
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .report-table th {
@@ -2171,6 +2171,40 @@ a.kpi:hover {
   outline: none;
   border-color: var(--accent);
   box-shadow: var(--ring);
+}
+
+/* ---------- Item kelengkapan yang belum ada berkas (laporan) ---------- */
+.cell-missing {
+  min-width: 190px;
+}
+
+.missing-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.missing-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: start;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.missing-list li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* ---------- Pratinjau berkas ---------- */

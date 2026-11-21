@@ -139,7 +139,14 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
                       {p.due_date ? formatDate(p.due_date) : '—'}
                       {d && <span class={`deadline ${d.tone} cell-deadline`}>{d.text}</span>}
                     </td>
-                    <td>{p.req_done}/{p.req_total}</td>
+                    <td class="cell-missing">
+                      <span>{p.req_total === 0 ? '—' : `${p.req_done}/${p.req_total}`}</span>
+                      {p.missing_requirements.length > 0 && (
+                        <ul class="missing-list" aria-label={`Belum ada berkas di ${p.name}`}>
+                          {p.missing_requirements.map((t) => <li>{t}</li>)}
+                        </ul>
+                      )}
+                    </td>
                     <td>{p.file_count}</td>
                     <td>{p.role === 'owner' ? 'Pemilik' : p.role === 'editor' ? 'Editor' : 'Viewer'}</td>
                   </tr>

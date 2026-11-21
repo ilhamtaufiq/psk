@@ -211,7 +211,11 @@ export interface ReportSummary {
   requirements_done: number;
 }
 
+export interface ReportProject extends Project {
+  missing_requirements: string[];
+}
+
 export interface ReportResponse {
   summary: ReportSummary;
-  projects: Project[];
+  projects: ReportProject[];
 }
