@@ -461,6 +461,14 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                             <input class="sr-only" type="file" name="file" required data-autoupload />
                           </label>
                         </form>
+
+                        <form method="post" action={`/api/projects/${project.id}/files/from-url`} class="req-drive can-edit">
+                          <input type="hidden" name="requirement_id" value={r.id} />
+                          <input type="hidden" name="anchor" value="#kelengkapan" />
+                          <label class="sr-only" for={`drive-${r.id}`}>Link Google Drive untuk {r.title}</label>
+                          <input id={`drive-${r.id}`} type="url" name="url" required placeholder="Atau tempel link Google Drive" inputmode="url" autocomplete="off" />
+                          <button class="btn ghost small" type="submit" data-busy="Mengambil…">Dari Drive</button>
+                        </form>
                       </li>
                     );
                   })}

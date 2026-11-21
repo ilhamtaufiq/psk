@@ -2148,6 +2148,31 @@ a.kpi:hover {
   }
 }
 
+/* ---------- Drive di item kelengkapan ---------- */
+.req-drive {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin: 0;
+}
+
+.req-drive input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.req-drive input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
   padding: 0;

@@ -7,7 +7,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!id) return redirectTo('/dashboard');
 
   const form = await request.formData();
-  const back = backTo(id, '#berkas');
+  // Kembali ke bagian asal formulir: #berkas atau #kelengkapan.
+  const back = backTo(id, form.get('anchor') ?? '#berkas');
   const url = String(form.get('url') ?? '').trim();
   const requirementId = safeId(form.get('requirement_id'));
   try {
