@@ -1,5 +1,5 @@
 ---
-import { PROJECT_TYPE_LABELS, STATUS_LABELS, type Project, type ProjectStatus, type ProjectType } from '../lib/api';
+import { STATUS_LABELS, type Project, type ProjectStatus, type ProjectTypeItem } from '../lib/api';
 
 interface Props {
   action: string;
@@ -7,13 +7,13 @@ interface Props {
   submitLabel: string;
   busyLabel: string;
   cancelHref: string;
+  types: ProjectTypeItem[];
 }
 
-const { action, project, submitLabel, busyLabel, cancelHref } = Astro.props;
+const { action, project, submitLabel, busyLabel, cancelHref, types } = Astro.props;
 const statuses = Object.keys(STATUS_LABELS) as ProjectStatus[];
 const currentStatus = project?.status ?? 'planning';
-const types = Object.keys(PROJECT_TYPE_LABELS) as ProjectType[];
-const currentType = project?.project_type ?? 'lainnya';
+const currentType = project?.project_type ?? types.find((t) => t.slug === 'lainnya')?.slug ?? types[0]?.slug ?? '';
 ---
 
 <form method="post" action={action} class="card form">
@@ -52,11 +52,14 @@ const currentType = project?.project_type ?? 'lainnya';
 
   <fieldset class="chips">
     <legend>Jenis proyek</legend>
+    {types.length === 0 && (
+      <p class="hint">Belum ada jenis. <a href="/jenis">Tambahkan jenis dulu</a>.</p>
+    )}
     {
       types.map((t) => (
         <label class="chip">
-          <input type="radio" name="project_type" value={t} checked={t === currentType} />
-          <span>{PROJECT_TYPE_LABELS[t]}</span>
+          <input type="radio" name="project_type" value={t.slug} checked={t.slug === currentType} />
+          <span>{t.label}</span>
         </label>
       ))
     }

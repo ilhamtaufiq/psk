@@ -14,7 +14,6 @@ import { deadlineOf, fileKind, formatBytes, formatDate, timeProgress } from '../
 import { previewKind } from '../../../lib/preview';
 import FieldForm from '../../../components/FieldForm.astro';
 import InfoValue from '../../../components/InfoValue.astro';
-import { PROJECT_TYPE_LABELS } from '../../../lib/api';
 import FilePreview from '../../../components/FilePreview.astro';
 
 const token = Astro.locals.token as string;
@@ -73,7 +72,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
         <section class="card hero" style="margin-top:12px">
           <div class="hero-top">
             <StatusBadge status={project.status} />
-            <span class="type-pill">{PROJECT_TYPE_LABELS[project.project_type]}</span>
+            <span class="type-pill">{project.project_type_label}</span>
             {deadline && <span class={`deadline ${deadline.tone}`}>{deadline.text}</span>}
           </div>
 

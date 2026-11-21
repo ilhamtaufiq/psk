@@ -3,7 +3,7 @@ use chrono::{Datelike, Duration, FixedOffset, NaiveDate, Utc};
 use serde::Serialize;
 use sqlx::{FromRow, SqlitePool};
 
-use crate::{auth::AuthUser, error::AppError, projects::{PROJECT_TYPES, STATUSES}, AppState};
+use crate::{auth::AuthUser, error::AppError, projects::STATUSES, AppState};
 
 /// Zona waktu tampilan (WIB). Tanggal "hari ini" mengikuti zona ini.
 const LOCAL_OFFSET_SECS: i32 = 7 * 3600;
@@ -13,6 +13,13 @@ const UPLOAD_MONTHS: u32 = 6;
 #[derive(Serialize)]
 pub struct Bucket {
     pub key: String,
+    pub count: i64,
+}
+
+#[derive(Serialize)]
+pub struct TypeBucket {
+    pub key: String,
+    pub label: String,
     pub count: i64,
 }
 
@@ -37,7 +44,7 @@ pub struct Dashboard {
     pub today: String,
     pub total_projects: i64,
     pub by_status: Vec<Bucket>,
-    pub by_type: Vec<Bucket>,
+    pub by_type: Vec<TypeBucket>,
     pub overdue: i64,
     pub due_soon: Vec<DeadlineItem>,
     pub total_files: i64,
@@ -104,6 +111,20 @@ pub async fn summary(
 
     let status_rows = count_by(pool, owner, "status").await?;
     let type_rows = count_by(pool, owner, "project_type").await?;
+    let type_defs: Vec<(String, String)> = sqlx::query_as(
+        "SELECT slug, label FROM project_types WHERE owner_id = ? ORDER BY label COLLATE NOCASE",
+    )
+    .bind(owner)
+    .fetch_all(pool)
+    .await?;
+    let by_type: Vec<TypeBucket> = type_defs
+        .into_iter()
+        .map(|(slug, label)| TypeBucket {
+            count: type_rows.iter().find(|(k, _)| *k == slug).map(|(_, c)| *c).unwrap_or(0),
+            key: slug,
+            label,
+        })
+        .collect();
 
     let (overdue,): (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM projects
@@ -171,7 +192,7 @@ pub async fn summary(
         today: today_s,
         total_projects,
         by_status: fill(&STATUSES, &status_rows),
-        by_type: fill(&PROJECT_TYPES, &type_rows),
+        by_type,
         overdue,
         due_soon,
         total_files,

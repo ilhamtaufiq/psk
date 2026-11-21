@@ -2,11 +2,13 @@
 import Layout from '../../../layouts/Layout.astro';
 import Icon from '../../../components/Icon.astro';
 import ProjectForm from '../../../components/ProjectForm.astro';
-import { api, ApiError, type Project } from '../../../lib/api';
+import { api, ApiError, type Project, type ProjectTypeItem } from '../../../lib/api';
 
 const token = Astro.locals.token as string;
 const { id } = Astro.params;
 const error = Astro.url.searchParams.get('error');
+
+const types = await api<ProjectTypeItem[]>('/api/project-types', { token });
 
 let project: Project | null = null;
 try {
@@ -45,6 +47,7 @@ try {
           submitLabel="Simpan perubahan"
           busyLabel="Menyimpan…"
           cancelHref={`/projects/${project.id}`}
+          types={types}
         />
       </>
     )

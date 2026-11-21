@@ -1,0 +1,86 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import { api, type ProjectTypeItem } from '../lib/api';
+
+const token = Astro.locals.token as string;
+const error = Astro.url.searchParams.get('error');
+const types = await api<ProjectTypeItem[]>('/api/project-types', { token });
+---
+
+<Layout title="Jenis proyek">
+  <a href="/projects" class="back"><Icon name="arrow-left" />Semua proyek</a>
+
+  <section class="page-head" style="margin-top:8px">
+    <div>
+      <p class="eyebrow">Pengaturan</p>
+      <h1>Jenis proyek</h1>
+      <p class="muted small" style="margin-top:4px">
+        Atur jenis sesuai kebutuhan Anda. Jenis yang masih dipakai proyek tidak bisa dihapus.
+      </p>
+    </div>
+  </section>
+
+  {error && <div class="alert error" role="alert">{error}</div>}
+
+  <form method="post" action="/api/project-types" class="card type-add">
+    <label class="field">
+      <span>Tambah jenis baru</span>
+      <input name="label" required maxlength="60" placeholder="mis. Layanan Publik" autocomplete="off" />
+    </label>
+    <div class="form-actions">
+      <button class="btn primary" type="submit" data-busy="Menambah…">
+        <Icon name="plus" />
+        Tambah jenis
+      </button>
+    </div>
+  </form>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>Daftar jenis</h2>
+      <span class="muted small">{types.length} jenis</span>
+    </div>
+
+    <ul class="type-list">
+      {
+        types.map((t) => (
+          <li class="type-item">
+            <div class="type-main">
+              <span class="type-name">{t.label}</span>
+              <span class="muted small">
+                {t.project_count === 0 ? 'Belum dipakai proyek' : `${t.project_count} proyek`}
+              </span>
+            </div>
+            <div class="type-tools">
+              <details class="info-edit">
+                <summary class="icon-btn sm" aria-label={`Ubah nama ${t.label}`} title="Ubah nama">
+                  <Icon name="edit" />
+                </summary>
+                <form method="post" action={`/api/project-types/${t.id}/update`} class="type-rename">
+                  <input name="label" value={t.label} required maxlength="60" aria-label="Nama jenis" />
+                  <button class="btn ghost small" type="submit" data-busy="Menyimpan…">Simpan</button>
+                </form>
+              </details>
+              <form
+                method="post"
+                action={`/api/project-types/${t.id}/delete`}
+                onsubmit={`return confirm('Hapus jenis "${t.label.replace(/["'\\\\]/g, '')}"?')`}
+              >
+                <button
+                  class="icon-btn sm danger-ico"
+                  type="submit"
+                  aria-label={`Hapus ${t.label}`}
+                  title={t.project_count > 0 ? `Dipakai ${t.project_count} proyek` : 'Hapus'}
+                  disabled={t.project_count > 0}
+                >
+                  <Icon name="trash" />
+                </button>
+              </form>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Layout>

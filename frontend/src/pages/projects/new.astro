@@ -2,8 +2,10 @@
 import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
 import ProjectForm from '../../components/ProjectForm.astro';
+import { api, type ProjectTypeItem } from '../../lib/api';
 
 const error = Astro.url.searchParams.get('error');
+const types = await api<ProjectTypeItem[]>('/api/project-types', { token: Astro.locals.token as string });
 ---
 
 <Layout title="Proyek baru">
@@ -24,5 +26,6 @@ const error = Astro.url.searchParams.get('error');
     submitLabel="Simpan proyek"
     busyLabel="Menyimpan…"
     cancelHref="/projects"
+    types={types}
   />
 </Layout>

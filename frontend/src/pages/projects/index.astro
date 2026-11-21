@@ -5,11 +5,10 @@ import StatusBadge from '../../components/StatusBadge.astro';
 import {
   api,
   PROJECT_SORTS,
-  PROJECT_TYPE_LABELS,
   STATUS_LABELS,
   type Project,
   type ProjectStatus,
-  type ProjectType,
+  type ProjectTypeItem,
 } from '../../lib/api';
 import { deadlineOf, formatDate, timeProgress } from '../../lib/format';
 
@@ -18,11 +17,13 @@ const params = Astro.url.searchParams;
 const error = params.get('error');
 
 const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
-const typeKeys = Object.keys(PROJECT_TYPE_LABELS) as ProjectType[];
+const types = await api<ProjectTypeItem[]>('/api/project-types', { token });
 const sortKeys = Object.keys(PROJECT_SORTS);
 
 const status = statusKeys.includes(params.get('status') as ProjectStatus) ? (params.get('status') as ProjectStatus) : null;
-const type = typeKeys.includes(params.get('type') as ProjectType) ? (params.get('type') as ProjectType) : null;
+const requestedType = params.get('type') ?? '';
+const type = types.some((t) => t.slug === requestedType) ? requestedType : null;
+const typeLabel = type ? types.find((t) => t.slug === type)?.label ?? null : null;
 const sort = sortKeys.includes(params.get('sort') ?? '') ? (params.get('sort') as string) : 'updated';
 
 // Gabungkan filter/urutan ke URL. Parameter kosong dibuang agar URL tetap bersih.
@@ -44,7 +45,7 @@ if (type) qs.set('type', type);
 qs.set('sort', sort);
 const projects = await api<Project[]>(`/api/projects?${qs.toString()}`, { token });
 
-const filterLabel = [status ? STATUS_LABELS[status] : null, type ? PROJECT_TYPE_LABELS[type] : null]
+const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
   .filter(Boolean)
   .join(' · ');
 ---
@@ -82,8 +83,8 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, type ? PROJECT_TYPE_
       <select name="type" data-autosubmit>
         <option value="">Semua jenis</option>
         {
-          typeKeys.map((t) => (
-            <option value={t} selected={t === type}>{PROJECT_TYPE_LABELS[t]}</option>
+          types.map((t) => (
+            <option value={t.slug} selected={t.slug === type}>{t.label}</option>
           ))
         }
       </select>
@@ -101,6 +102,8 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, type ? PROJECT_TYPE_
     </label>
     <noscript><button class="btn ghost small" type="submit">Terapkan</button></noscript>
   </form>
+
+  <p class="toolbar-note"><a href="/jenis">Kelola jenis proyek</a></p>
 
   {
     projects.length === 0 ? (
@@ -125,7 +128,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, type ? PROJECT_TYPE_
                 <div class="card-top">
                   <div class="badges">
                     <StatusBadge status={p.status} />
-                    <span class="type-pill">{PROJECT_TYPE_LABELS[p.project_type]}</span>
+                    <span class="type-pill">{p.project_type_label}</span>
                   </div>
                   <span class="count" title="Jumlah berkas">
                     <Icon name="paperclip" />

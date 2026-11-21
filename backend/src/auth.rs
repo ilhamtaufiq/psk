@@ -180,6 +180,7 @@ pub async fn register(
     .execute(&state.pool)
     .await?;
 
+    crate::types::seed_defaults(&state.pool, &id).await?;
     let token = create_session(&state, &id).await?;
     let user = User {
         id,

@@ -20,17 +20,15 @@ export const STATUS_LABELS: Record<ProjectStatus, string> = {
   completed: 'Selesai',
 };
 
-export type ProjectType = 'administrasi' | 'konstruksi' | 'lainnya' | 'operasional' | 'pemasaran' | 'riset' | 'teknologi';
+/** Slug jenis proyek (mis. 'konstruksi'). Daftar jenis milik pengguna diambil dari API. */
+export type ProjectType = string;
 
-export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
-  administrasi: 'Administrasi',
-  konstruksi: 'Konstruksi',
-  lainnya: 'Lainnya',
-  operasional: 'Operasional',
-  pemasaran: 'Pemasaran',
-  riset: 'Riset & Pengembangan',
-  teknologi: 'Teknologi / IT',
-};
+export interface ProjectTypeItem {
+  id: string;
+  slug: string;
+  label: string;
+  project_count: number;
+}
 
 export const PROJECT_SORTS: Record<string, string> = {
   updated: 'Terakhir diubah',
@@ -54,6 +52,7 @@ export interface Project {
   description: string;
   status: ProjectStatus;
   project_type: ProjectType;
+  project_type_label: string;
   start_date: string | null;
   due_date: string | null;
   created_at: string;
@@ -86,7 +85,7 @@ export interface ProjectInput {
   name: string;
   description?: string;
   status?: ProjectStatus;
-  project_type?: ProjectType;
+  project_type?: string;
   start_date?: string | null;
   due_date?: string | null;
 }
@@ -146,7 +145,7 @@ export interface DashboardData {
   today: string;
   total_projects: number;
   by_status: Bucket[];
-  by_type: Bucket[];
+  by_type: Array<{ key: string; label: string; count: number }>;
   overdue: number;
   due_soon: Array<{ id: string; name: string; status: ProjectStatus; due_date: string }>;
   total_files: number;

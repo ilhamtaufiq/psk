@@ -4,11 +4,9 @@ import Icon from '../components/Icon.astro';
 import StatusBadge from '../components/StatusBadge.astro';
 import {
   api,
-  PROJECT_TYPE_LABELS,
   STATUS_LABELS,
   type DashboardData,
   type ProjectStatus,
-  type ProjectType,
 } from '../lib/api';
 import { deadlineOf, formatBytes, formatDate } from '../lib/format';
 
@@ -119,7 +117,7 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
             .map((b) => (
               <li>
                 <div class="hbar-head">
-                  <span>{PROJECT_TYPE_LABELS[b.key as ProjectType]}</span>
+                  <span>{b.label}</span>
                   <span class="muted">{b.count}</span>
                 </div>
                 <div class="hbar-track">

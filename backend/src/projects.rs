@@ -11,23 +11,13 @@ use uuid::Uuid;
 use crate::{auth::AuthUser, error::AppError, now_iso, AppState};
 
 pub const STATUSES: [&str; 4] = ["planning", "active", "on_hold", "completed"];
-pub const PROJECT_TYPES: [&str; 7] = [
-    "administrasi",
-    "konstruksi",
-    "lainnya",
-    "operasional",
-    "pemasaran",
-    "riset",
-    "teknologi",
-];
-
 /// Pengurutan yang diizinkan. Nilai dari klien hanya dipetakan ke klausa ini, tidak pernah langsung ke SQL.
 fn order_clause(sort: Option<&str>) -> &'static str {
     match sort {
         Some("name") => "p.name COLLATE NOCASE ASC",
         Some("created") => "p.created_at DESC",
         Some("due") => "(p.due_date IS NULL), p.due_date ASC, p.name COLLATE NOCASE ASC",
-        Some("type") => "p.project_type ASC, p.name COLLATE NOCASE ASC",
+        Some("type") => "COALESCE((SELECT t.label FROM project_types t WHERE t.owner_id = p.owner_id AND t.slug = p.project_type), p.project_type) COLLATE NOCASE ASC, p.name COLLATE NOCASE ASC",
         Some("status") => "CASE p.status WHEN 'active' THEN 0 WHEN 'planning' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END, p.updated_at DESC",
         _ => "p.updated_at DESC",
     }
@@ -40,6 +30,7 @@ pub struct Project {
     pub description: String,
     pub status: String,
     pub project_type: String,
+    pub project_type_label: String,
     pub start_date: Option<String>,
     pub due_date: Option<String>,
     pub created_at: String,
@@ -49,7 +40,9 @@ pub struct Project {
     pub req_done: i64,
 }
 
-const PROJECT_SELECT: &str = "SELECT p.id, p.name, p.description, p.status, p.project_type, p.start_date, p.due_date,
+const PROJECT_SELECT: &str = "SELECT p.id, p.name, p.description, p.status, p.project_type,
+    COALESCE((SELECT t.label FROM project_types t WHERE t.owner_id = p.owner_id AND t.slug = p.project_type), p.project_type) AS project_type_label,
+    p.start_date, p.due_date,
     p.created_at, p.updated_at,
     (SELECT COUNT(*) FROM project_files f WHERE f.project_id = p.id) AS file_count,
     (SELECT COUNT(*) FROM project_requirements r WHERE r.project_id = p.id) AS req_total,
@@ -115,9 +108,13 @@ fn validate(input: ProjectInput) -> Result<Valid, AppError> {
         return Err(AppError::BadRequest("Status proyek tidak dikenal".into()));
     }
 
-    let project_type = input.project_type.unwrap_or_else(|| "lainnya".into());
-    if !PROJECT_TYPES.contains(&project_type.as_str()) {
-        return Err(AppError::BadRequest("Jenis proyek tidak dikenal".into()));
+    let project_type = input
+        .project_type
+        .map(|t| t.trim().to_lowercase())
+        .filter(|t| !t.is_empty())
+        .unwrap_or_else(|| "lainnya".into());
+    if project_type.chars().count() > 60 {
+        return Err(AppError::BadRequest("Jenis proyek tidak valid".into()));
     }
 
     let start = parse_date(input.start_date, "Tanggal mulai")?;
@@ -161,7 +158,7 @@ pub async fn list(
     Query(q): Query<ListQuery>,
 ) -> Result<Json<Vec<Project>>, AppError> {
     let status = q.status.filter(|s| STATUSES.contains(&s.as_str()));
-    let project_type = q.project_type.filter(|t| PROJECT_TYPES.contains(&t.as_str()));
+    let project_type = q.project_type.map(|t| t.trim().to_lowercase()).filter(|t| !t.is_empty());
     let sql = format!(
         "{PROJECT_SELECT} WHERE p.owner_id = ?
            AND (? IS NULL OR p.status = ?)
@@ -186,6 +183,7 @@ pub async fn create(
     Json(input): Json<ProjectInput>,
 ) -> Result<(StatusCode, Json<Project>), AppError> {
     let v = validate(input)?;
+    crate::types::ensure_exists(&state.pool, &user.id, &v.project_type).await?;
     let id = Uuid::new_v4().to_string();
     let now = now_iso();
 
@@ -226,6 +224,7 @@ pub async fn update(
 ) -> Result<Json<Project>, AppError> {
     fetch_project(&state.pool, &id, &user.id).await?;
     let v = validate(input)?;
+    crate::types::ensure_exists(&state.pool, &user.id, &v.project_type).await?;
 
     sqlx::query(
         "UPDATE projects

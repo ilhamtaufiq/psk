@@ -6,6 +6,7 @@ mod files;
 mod health;
 mod projects;
 mod requirements;
+mod types;
 
 use std::{path::PathBuf, str::FromStr};
 
@@ -50,12 +51,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let upload_dir = PathBuf::from(std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "data/uploads".into()));
     let bind_addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:8080".into());
 
-    let options = SqliteConnectOptions::from_str(&database_url)?
+    let base = SqliteConnectOptions::from_str(&database_url)?
         .create_if_missing(true)
-        .foreign_keys(true)
         .journal_mode(SqliteJournalMode::Wal);
-    let pool = SqlitePool::connect_with(options).await?;
-    sqlx::migrate!("./migrations").run(&pool).await?;
+
+    // Migrasi berjalan dengan foreign key mati: sebagian migrasi membangun ulang tabel,
+    // dan DROP TABLE dengan FK aktif akan menghapus data turunannya (ON DELETE CASCADE).
+    let migrate_pool = SqlitePool::connect_with(base.clone().foreign_keys(false)).await?;
+    sqlx::migrate!("./migrations").run(&migrate_pool).await?;
+    migrate_pool.close().await;
+
+    let pool = SqlitePool::connect_with(base.foreign_keys(true)).await?;
     tokio::fs::create_dir_all(&upload_dir).await?;
 
     let state = AppState { pool, upload_dir };
@@ -67,6 +73,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::me))
         .route("/api/dashboard", get(dashboard::summary))
+        .route("/api/project-types", get(types::list).post(types::create))
+        .route("/api/project-types/{id}", put(types::update).delete(types::delete))
         .route(
             "/api/projects",
             get(projects::list).post(projects::create),

@@ -24,7 +24,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
-  const isProtected = pathname === '/' || pathname.startsWith('/projects');
+  const isProtected = pathname === '/' || pathname.startsWith('/projects') || pathname === '/jenis';
   const isGuestOnly = pathname === '/login' || pathname === '/register';
 
   if (isProtected && !context.locals.user) {

@@ -1776,6 +1776,100 @@ a.kpi:hover {
   }
 }
 
+/* ---------- Jenis proyek (dikelola pengguna) ---------- */
+.toolbar-note {
+  margin: -8px 0 18px;
+  font-size: 0.85rem;
+}
+
+.type-add {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.type-add .form-actions .btn {
+  width: 100%;
+}
+
+.type-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.type-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+.type-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.type-name {
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+.type-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.type-tools form {
+  margin: 0;
+}
+
+.type-tools .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.type-rename {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  width: min(300px, calc(100vw - 48px));
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+
+.type-rename input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.type-item .info-edit {
+  position: relative;
+}
+
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
   margin: 0;
