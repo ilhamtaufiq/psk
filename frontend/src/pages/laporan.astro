@@ -18,7 +18,10 @@ const qs = new URLSearchParams();
 if (status) qs.set('status', status);
 if (type) qs.set('type', type);
 const report = await api<ReportResponse>(`/api/reports/projects${qs.toString() ? `?${qs}` : ''}`, { token });
-const { summary, projects } = report;
+const { summary, projects, recap } = report;
+const recapTotal = recap.reduce((sum, r) => sum + r.total, 0);
+const recapDone = recap.reduce((sum, r) => sum + r.done, 0);
+const recapPercent = recapTotal > 0 ? Math.round((recapDone / recapTotal) * 100) : 0;
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
 const reqPercent = pct(summary.requirements_done, summary.requirements_total);
 const generated = formatDate(summary.generated_at, true);
@@ -88,15 +91,40 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
 
   <section class="card report-status screen-only" aria-label="Distribusi status">
     <h2>Per status</h2>
-    <ul class="legend">
+    <div class="status-stats">
       {summary.by_status.map((s) => (
-        <li>
-          <span class={`dot seg-${s.key}`} aria-hidden="true" />
-          <span class="legend-label">{s.label}</span>
-          <span class="legend-value">{s.count} <span class="muted">· {pct(s.count, summary.total)}%</span></span>
-        </li>
+        <div class={`status-stat seg-${s.key}`}>
+          <span class="status-stat-label">{s.label}</span>
+          <span class="status-stat-value">{s.count}</span>
+          <span class="status-stat-pct">{pct(s.count, summary.total)}% dari {summary.total}</span>
+        </div>
       ))}
-    </ul>
+    </div>
+  </section>
+
+  <section class="card recap screen-only" aria-labelledby="recap-title">
+    <div class="section-head">
+      <h2 id="recap-title">Rekap kelengkapan</h2>
+      <span class="muted small">{recapDone} dari {recapTotal} item · {recapPercent}%</span>
+    </div>
+    {recap.length === 0 ? (
+      <p class="muted small">Belum ada item kelengkapan pada proyek yang dipilih.</p>
+    ) : (
+      <div class="recap-grid">
+        {recap.map((r) => (
+          <div class="recap-stat">
+            <div class="recap-top">
+              <span class="recap-label">{r.label}</span>
+              <span class="recap-value">{r.done}<small>/{r.total}</small></span>
+            </div>
+            <div class="progress" role="progressbar" aria-label={`${r.label} terpenuhi ${r.percent}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.percent}>
+              <span style={`width:${r.percent}%`} />
+            </div>
+            <span class="recap-pct">{r.percent}% terpenuhi</span>
+          </div>
+        ))}
+      </div>
+    )}
   </section>
 
   <section class="section screen-only">
@@ -185,11 +213,27 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
           <span class={`print-seg seg-${s.key}`} style={`flex:${s.count}`} />
         ))}
       </div>
-      <ul class="print-legend">
+      <div class="print-status-grid">
         {summary.by_status.map((s) => (
-          <li><span class={`print-dot seg-${s.key}`} />{s.label}: <strong>{s.count}</strong> ({pct(s.count, summary.total)}%)</li>
+          <div class={`print-status-stat seg-${s.key}`}>
+            <span class="print-status-label">{s.label}</span>
+            <span class="print-status-value">{s.count} <em>{pct(s.count, summary.total)}%</em></span>
+          </div>
         ))}
-      </ul>
+      </div>
+    </section>
+
+    <section class="print-recap">
+      <h2>Rekap kelengkapan <span>({recapDone} dari {recapTotal} item · {recapPercent}%)</span></h2>
+      <div class="print-recap-grid">
+        {recap.map((r) => (
+          <div class="print-recap-stat">
+            <span class="print-recap-label">{r.label}</span>
+            <span class="print-recap-value">{r.done}<small>/{r.total}</small> <em>{r.percent}%</em></span>
+            <span class="print-recap-bar"><span style={`width:${r.percent}%`} /></span>
+          </div>
+        ))}
+      </div>
     </section>
 
     <section class="print-list-block">

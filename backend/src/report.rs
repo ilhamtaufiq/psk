@@ -50,10 +50,20 @@ pub struct ReportProject {
     pub missing_requirements: Vec<String>,
 }
 
+/// Rekap satu item kelengkapan lintas proyek: berapa proyek punya item ini, dan berapa sudah ada berkasnya.
+#[derive(Serialize)]
+pub struct RecapItem {
+    pub label: String,
+    pub total: i64,
+    pub done: i64,
+    pub percent: i64,
+}
+
 #[derive(Serialize)]
 pub struct ReportResponse {
     pub summary: ReportSummary,
     pub projects: Vec<ReportProject>,
+    pub recap: Vec<RecapItem>,
 }
 
 pub fn status_label(status: &str) -> &'static str {
@@ -167,11 +177,53 @@ fn summarize(projects: &[Project]) -> ReportSummary {
     }
 }
 
+/// Rekap kelengkapan per nama item (tanpa membedakan huruf besar/kecil), mengikuti filter laporan.
+async fn requirement_recap(state: &AppState, user_id: &str, q: &ReportQuery) -> Result<Vec<RecapItem>, AppError> {
+    let status = q.status.clone().filter(|s| !s.trim().is_empty());
+    let project_type = q
+        .project_type
+        .clone()
+        .map(|t| t.trim().to_lowercase())
+        .filter(|t| !t.is_empty());
+    let rows: Vec<(String, i64, i64)> = sqlx::query_as(
+        "SELECT MIN(TRIM(r.title)) AS label,
+                COUNT(*) AS total,
+                SUM(CASE WHEN EXISTS (SELECT 1 FROM project_files f WHERE f.requirement_id = r.id)
+                         THEN 1 ELSE 0 END) AS done
+         FROM project_requirements r
+         JOIN projects p ON p.id = r.project_id
+         WHERE (p.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?))
+           AND (? IS NULL OR p.status = ?)
+           AND (? IS NULL OR p.project_type = ?)
+         GROUP BY LOWER(TRIM(r.title))
+         ORDER BY total DESC, label COLLATE NOCASE",
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .bind(&status)
+    .bind(&status)
+    .bind(&project_type)
+    .bind(&project_type)
+    .fetch_all(&state.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(label, total, done)| RecapItem {
+            label,
+            total,
+            done,
+            percent: if total > 0 { (done * 100 + total / 2) / total } else { 0 },
+        })
+        .collect())
+}
+
 pub async fn json(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
     Query(q): Query<ReportQuery>,
 ) -> Result<Json<ReportResponse>, AppError> {
+    let recap = requirement_recap(&state, &user.id, &q).await?;
     let projects = load(&state, &user.id, &q).await?;
     let summary = summarize(&projects);
     let mut missing = missing_requirements(&state, &user.id).await?;
@@ -182,7 +234,7 @@ pub async fn json(
             ReportProject { project: p, missing_requirements }
         })
         .collect();
-    Ok(Json(ReportResponse { summary, projects }))
+    Ok(Json(ReportResponse { summary, projects, recap }))
 }
 
 /// Mencegah nilai sel dibaca sebagai rumus oleh Excel/Sheets (CSV injection).

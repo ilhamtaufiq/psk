@@ -215,7 +215,15 @@ export interface ReportProject extends Project {
   missing_requirements: string[];
 }
 
+export interface RecapItem {
+  label: string;
+  total: number;
+  done: number;
+  percent: number;
+}
+
 export interface ReportResponse {
   summary: ReportSummary;
   projects: ReportProject[];
+  recap: RecapItem[];
 }

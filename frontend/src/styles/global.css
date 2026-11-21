@@ -2874,6 +2874,235 @@ a.kpi:hover {
   }
 }
 
+/* ---------- Rekap kelengkapan (stats) ---------- */
+.recap {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.recap h2 {
+  font-size: 1rem;
+}
+
+.recap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recap-stat {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+.recap-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recap-label {
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+.recap-value {
+  font-size: 1.4rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.recap-value small {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.recap-pct {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@media (min-width: 640px) {
+  .recap-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .recap-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Rekap di PDF: kartu stat ringkas */
+.print-recap {
+  margin-bottom: 16px;
+  break-inside: avoid;
+}
+
+.print-recap h2 {
+  font-size: 10.5pt;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.print-recap h2 span {
+  font-weight: 500;
+  color: #667085;
+}
+
+.print-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.print-recap-stat {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e3e6ef;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #f8f9fc;
+  break-inside: avoid;
+}
+
+.print-recap-label {
+  font-size: 8pt;
+  font-weight: 650;
+  color: #475467;
+}
+
+.print-recap-value {
+  font-size: 13pt;
+  font-weight: 750;
+}
+
+.print-recap-value small {
+  font-size: 8.5pt;
+  color: #667085;
+}
+
+.print-recap-value em {
+  font-style: normal;
+  font-size: 8pt;
+  font-weight: 650;
+  color: #4f46e5;
+}
+
+.print-recap-bar {
+  display: block;
+  height: 5px;
+  border-radius: 999px;
+  background: #e3e6ef;
+  overflow: hidden;
+}
+
+.print-recap-bar > span {
+  display: block;
+  height: 100%;
+  background: #6366f1;
+}
+
+/* ---------- Status proyek (stats) ---------- */
+.status-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-stat {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--stat-color, #6366f1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+.status-stat.seg-planning { --stat-color: #6366f1; }
+.status-stat.seg-active { --stat-color: #10b981; }
+.status-stat.seg-on_hold { --stat-color: #f59e0b; }
+.status-stat.seg-completed { --stat-color: #94a3b8; }
+
+.status-stat-label {
+  font-size: 0.85rem;
+  font-weight: 620;
+  color: var(--muted);
+}
+
+.status-stat-value {
+  font-size: 1.7rem;
+  font-weight: 750;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-stat-pct {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+@media (min-width: 640px) {
+  .status-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Status di PDF: kartu stat ringkas */
+.print-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.print-status-stat {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid #e3e6ef;
+  border-top: 3px solid var(--stat-color, #6366f1);
+  border-radius: 8px;
+  background: #f8f9fc;
+  break-inside: avoid;
+}
+
+.print-status-stat.seg-planning { --stat-color: #6366f1; }
+.print-status-stat.seg-active { --stat-color: #10b981; }
+.print-status-stat.seg-on_hold { --stat-color: #f59e0b; }
+.print-status-stat.seg-completed { --stat-color: #94a3b8; }
+
+.print-status-label {
+  font-size: 7.5pt;
+  font-weight: 650;
+  color: #475467;
+}
+
+.print-status-value {
+  font-size: 13pt;
+  font-weight: 750;
+}
+
+.print-status-value em {
+  font-style: normal;
+  font-size: 8pt;
+  font-weight: 650;
+  color: #667085;
+}
+
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
   padding: 0;
