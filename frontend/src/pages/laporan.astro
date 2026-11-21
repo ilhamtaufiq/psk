@@ -2,14 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
 import StatusBadge from '../components/StatusBadge.astro';
-import {
-  api,
-  PROJECT_SORTS,
-  type ProjectTypeItem,
-  type ProjectStatus,
-  type ReportResponse,
-  STATUS_LABELS,
-} from '../lib/api';
+import { api, type ProjectTypeItem, type ProjectStatus, type ReportResponse, STATUS_LABELS } from '../lib/api';
 import { deadlineOf, formatDate } from '../lib/format';
 
 const token = Astro.locals.token as string;
@@ -30,10 +23,15 @@ const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / who
 const reqPercent = pct(summary.requirements_done, summary.requirements_total);
 const generated = formatDate(summary.generated_at, true);
 const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
+const filterText = [
+  status ? STATUS_LABELS[status as ProjectStatus] : 'Semua status',
+  type ? types.find((t) => t.slug === type)?.label ?? type : 'Semua jenis',
+].join(' · ');
+const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? 'Editor' : 'Viewer');
 ---
 
 <Layout title="Laporan">
-  <section class="page-head report-head">
+  <section class="page-head report-head screen-only">
     <div>
       <p class="eyebrow">Laporan</p>
       <h1>Laporan semua proyek</h1>
@@ -41,11 +39,12 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
     </div>
     <div class="actions report-actions">
       <a href={csvHref} class="btn ghost"><Icon name="download" />Unduh CSV</a>
-      <button type="button" class="btn primary" data-print><Icon name="file" />Cetak / PDF</button>
+      <button type="button" class="btn primary" data-print><Icon name="file" />Simpan sebagai PDF</button>
     </div>
   </section>
+  <p class="print-tip screen-only">Pilih "Simpan sebagai PDF" di dialog cetak. Atur tujuan dan ukuran kertas A4 bila perlu.</p>
 
-  <form method="get" action="/laporan" class="toolbar report-filter" aria-label="Filter laporan">
+  <form method="get" action="/laporan" class="toolbar report-filter screen-only" aria-label="Filter laporan">
     <label class="select-field">
       <span class="sr-only">Status</span>
       <Icon name="list" />
@@ -64,7 +63,7 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
     </label>
   </form>
 
-  <section class="kpis report-kpis" aria-label="Ringkasan laporan">
+  <section class="kpis report-kpis screen-only" aria-label="Ringkasan laporan">
     <div class="card kpi">
       <span class="kpi-label">Proyek</span>
       <span class="kpi-value">{summary.total}</span>
@@ -87,7 +86,7 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
     </div>
   </section>
 
-  <section class="card report-status" aria-label="Distribusi status">
+  <section class="card report-status screen-only" aria-label="Distribusi status">
     <h2>Per status</h2>
     <ul class="legend">
       {summary.by_status.map((s) => (
@@ -100,7 +99,7 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
     </ul>
   </section>
 
-  <section class="section">
+  <section class="section screen-only">
     <div class="section-head">
       <h2>Daftar proyek</h2>
       <span class="muted small">{projects.length} proyek · urut nama</span>
@@ -148,7 +147,7 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
                       )}
                     </td>
                     <td>{p.file_count}</td>
-                    <td>{p.role === 'owner' ? 'Pemilik' : p.role === 'editor' ? 'Editor' : 'Viewer'}</td>
+                    <td>{roleLabel(p.role)}</td>
                   </tr>
                 );
               })}
@@ -158,6 +157,100 @@ const csvHref = `/api/reports/csv${qs.toString() ? `?${qs}` : ''}`;
       )
     }
   </section>
+
+  <!-- Dokumen cetak: hanya tampil saat dicetak / disimpan sebagai PDF -->
+  <article class="print-doc" aria-label="Dokumen laporan">
+    <header class="print-head">
+      <img class="print-logo" src="/logo.svg" width="44" height="44" alt="" />
+      <div class="print-title">
+        <p class="print-kicker">Laporan Proyek</p>
+        <h1>Proyek Selepas Kerja</h1>
+        <p class="print-meta">Dibuat {generated}</p>
+        <p class="print-meta">Filter: {filterText}</p>
+      </div>
+    </header>
+
+    <dl class="print-kpis">
+      <div><dt>Total proyek</dt><dd>{summary.total}</dd></div>
+      <div><dt>Selesai</dt><dd>{summary.completed}</dd></div>
+      <div class={summary.overdue > 0 ? 'print-warn' : ''}><dt>Terlambat</dt><dd>{summary.overdue}</dd></div>
+      <div><dt>Kelengkapan</dt><dd>{reqPercent}%</dd></div>
+      <div><dt>Berkas</dt><dd>{summary.files_total}</dd></div>
+    </dl>
+
+    <section class="print-status-block">
+      <h2>Distribusi status</h2>
+      <div class="print-bar" role="img" aria-label="Distribusi status proyek">
+        {summary.by_status.filter((s) => s.count > 0).map((s) => (
+          <span class={`print-seg seg-${s.key}`} style={`flex:${s.count}`} />
+        ))}
+      </div>
+      <ul class="print-legend">
+        {summary.by_status.map((s) => (
+          <li><span class={`print-dot seg-${s.key}`} />{s.label}: <strong>{s.count}</strong> ({pct(s.count, summary.total)}%)</li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="print-list-block">
+      <h2>Daftar proyek <span>({projects.length})</span></h2>
+      {projects.length === 0 ? (
+        <p class="print-empty">Tidak ada proyek untuk filter ini.</p>
+      ) : (
+        <table class="print-table">
+          <colgroup>
+            <col class="col-no" />
+            <col class="col-name" />
+            <col class="col-type" />
+            <col class="col-status" />
+            <col class="col-period" />
+            <col class="col-due" />
+            <col class="col-num" />
+            <col class="col-num" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="c-no">No</th>
+              <th class="c-name">Nama proyek</th>
+              <th>Jenis</th>
+              <th>Status</th>
+              <th>Periode</th>
+              <th>Tenggat</th>
+              <th class="c-num">Kelengkapan</th>
+              <th class="c-num">Berkas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p, i) => {
+              const d = deadlineOf(p.due_date, p.status);
+              return (
+                <tr>
+                  <td class="c-no">{i + 1}</td>
+                  <td class="c-name">
+                    <strong>{p.name}</strong>
+                    <span class="print-role">{roleLabel(p.role)}</span>
+                    {p.missing_requirements.length > 0 && (
+                      <span class="print-missing">Belum ada berkas: {p.missing_requirements.join(', ')}</span>
+                    )}
+                  </td>
+                  <td>{p.project_type_label}</td>
+                  <td><span class={`print-status-pill ${p.status}`}>{STATUS_LABELS[p.status as ProjectStatus]}</span></td>
+                  <td class="c-period">{formatDate(p.start_date)}<br />{formatDate(p.due_date)}</td>
+                  <td>{d ? d.text : '—'}</td>
+                  <td class="c-num">{p.req_total === 0 ? '—' : `${p.req_done}/${p.req_total}`}</td>
+                  <td class="c-num">{p.file_count}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </section>
+
+    <footer class="print-foot">
+      <span>Proyek Selepas Kerja · laporan dibuat {generated}</span>
+    </footer>
+  </article>
 </Layout>
 
 <script>
