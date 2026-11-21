@@ -2480,6 +2480,44 @@ a.kpi:hover {
   background: currentColor;
 }
 
+/* ---------- Splash screen ---------- */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: #fbebc1;
+  pointer-events: none;
+  animation: splash-out 0.6s ease 1.2s forwards;
+}
+
+.splash img {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100dvh;
+  object-fit: contain;
+}
+
+.splash-done .splash {
+  display: none;
+}
+
+@keyframes splash-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    animation-delay: 0.6s;
+    animation-duration: 0.2s;
+  }
+}
+
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
   padding: 0;

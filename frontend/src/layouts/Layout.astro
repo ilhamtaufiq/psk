@@ -28,11 +28,16 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <!-- Splash hanya sekali per tab; kelas ini dipasang sebelum render agar tidak berkedip -->
+    <script is:inline>try{if(sessionStorage.getItem("psk-splash")){document.documentElement.classList.add("splash-done")}}catch(e){}</script>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <title>{title} · Proyek Selepas Kerja</title>
   </head>
   <body>
+    <div class="splash" aria-hidden="true">
+      <img src="/splash.webp" width="360" height="640" alt="" decoding="async" />
+    </div>
     <header class="topbar">
       <div class="container bar">
         <a href={user ? '/projects' : '/login'} class="brand">
@@ -93,6 +98,8 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
     }
 
     <script>
+      try { sessionStorage.setItem('psk-splash', '1'); } catch (e) {}
+
       // Tombol bertanda data-busy langsung menampilkan status saat formulir dikirim.
       document.addEventListener('submit', (event) => {
         if (event.defaultPrevented) return; // dibatalkan, mis. konfirmasi hapus ditolak
