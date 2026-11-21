@@ -21,4 +21,8 @@ ENV BIND_ADDR=0.0.0.0:8080 \
 # Database dan berkas proyek disimpan di /data (pasang sebagai volume persisten)
 VOLUME ["/data"]
 EXPOSE 8080
+# Cek kesehatan: endpoint /api/health harus 200 (database terbaca)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["psk-backend", "healthcheck"]
+
 CMD ["psk-backend"]

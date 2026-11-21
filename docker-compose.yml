@@ -1,6 +1,6 @@
 # Dipakai di Coolify (Docker Compose).
 #
-# Hanya service `frontend` yang diberi domain publik (psk.cjr.my.id, port 4321).
+# Hanya service `frontend` yang diberi domain publik (psk.cianjur.space, port 4321).
 # Service `backend` TIDAK dipublikasikan; frontend memanggilnya lewat jaringan internal
 # Docker di http://backend:8080. Dengan begitu tidak perlu CORS dan cookie sesi tetap httpOnly.
 
@@ -12,7 +12,14 @@ services:
     environment:
       - API_URL=http://backend:8080
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 4321) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped
 
   backend:
@@ -26,6 +33,12 @@ services:
       - RUST_LOG=info
     volumes:
       - psk-data:/data
+    healthcheck:
+      test: ["CMD", "psk-backend", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
 volumes:

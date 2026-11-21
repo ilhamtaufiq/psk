@@ -2,6 +2,7 @@ mod auth;
 mod dashboard;
 mod error;
 mod files;
+mod health;
 mod projects;
 mod requirements;
 
@@ -32,6 +33,11 @@ pub fn now_iso() -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // `psk-backend healthcheck` hanya mengetes layanan yang sedang berjalan, lalu keluar.
+    if std::env::args().nth(1).as_deref() == Some("healthcheck") {
+        std::process::exit(health::run_cli_check());
+    }
+
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
@@ -54,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState { pool, upload_dir };
 
     let app = Router::new()
-        .route("/api/health", get(|| async { "ok" }))
+        .route("/api/health", get(health::check))
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/logout", post(auth::logout))

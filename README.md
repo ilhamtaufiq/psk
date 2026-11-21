@@ -4,7 +4,7 @@ Aplikasi web manajemen proyek sederhana: autentikasi, daftar & pengelolaan proye
 
 - **Backend:** Rust (axum 0.8, sqlx + SQLite, argon2)
 - **Frontend:** Astro (SSR, adapter Node)
-- **Deploy:** Coolify (Docker Compose), domain `psk.cjr.my.id`
+- **Deploy:** Coolify (Docker Compose), domain `psk.cianjur.space`
 
 ## Fitur
 
@@ -94,21 +94,38 @@ Semua endpoint selain `auth/register` dan `auth/login` memerlukan header `Author
 | GET | `/api/projects/{id}/files` | Daftar berkas |
 | POST | `/api/projects/{id}/files` | Unggah berkas (multipart, field `file`) |
 | GET / DELETE | `/api/files/{id}` | Unduh / hapus berkas |
-| GET | `/api/health` | Cek hidup |
+| GET | `/api/health` | Cek hidup dan database (200 `ok`, 503 `error`) |
 
 ## Deploy ke Coolify
 
 1. Pastikan kode ada di repositori Git (GitHub/GitLab/Gitea) dan `backend/Cargo.lock` ikut ter-commit.
 2. Di Coolify: **New Resource → Docker Compose** → pilih repositori dan branch. Base directory: `/` (root repo), Compose file: `docker-compose.yml`.
-3. Buka service **frontend** dan isi domain: `https://psk.cjr.my.id`, port `4321`. Coolify mengurus sertifikat HTTPS.
+3. Buka service **frontend** dan isi domain: `https://psk.cianjur.space`, port `4321`. Coolify mengurus sertifikat HTTPS.
 4. Jangan isi domain untuk service **backend**; biarkan internal.
 5. Deploy. Volume `psk-data` menyimpan database dan berkas. Jangan dihapus saat redeploy.
-6. Cek: buka `https://psk.cjr.my.id`, daftar akun, buat proyek, dan unggah satu berkas.
+6. Cek: buka `https://psk.cianjur.space`, daftar akun, buat proyek, dan unggah satu berkas.
 
 Catatan:
 - Cookie sesi otomatis memakai atribut `Secure` ketika permintaan datang lewat HTTPS (membaca `X-Forwarded-Proto` dari proxy Coolify).
 - Backup: salin volume `psk-data` secara berkala (berisi `app.db` dan folder `uploads/`).
 - Untuk skala lebih besar, SQLite bisa diganti PostgreSQL; kode sqlx perlu disesuaikan.
+
+## Healthcheck
+
+| Endpoint / perintah | Fungsi |
+| --- | --- |
+| `GET /api/health` (backend) | 200 bila database bisa dibaca, 503 bila tidak. Isi: `status`, `database`, `version`. |
+| `psk-backend healthcheck` | Dipanggil dari dalam container. Exit 0 bila `/api/health` menjawab 200, selain itu 1. Tidak membutuhkan curl. |
+| `GET /api/health` (frontend) | Selalu 200 selama frontend hidup. Melaporkan `backend: ok` atau `down`. |
+
+Setiap service di `docker-compose.yml` punya `healthcheck`, dan frontend hanya start setelah backend `healthy`.
+Di Coolify, status kesehatan tampil di halaman resource; bila container dinyatakan unhealthy, Coolify bisa me-restart-nya.
+
+Cek manual:
+
+```bash
+curl -s https://psk.cianjur.space/api/health
+```
 
 ## Batasan saat ini
 
