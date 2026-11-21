@@ -8,6 +8,7 @@ import {
   type Project,
   type ProjectFile,
   type ProjectField,
+  type MemberList,
   type Requirement,
 } from '../../../lib/api';
 import { deadlineOf, fileKind, formatBytes, formatDate, timeProgress } from '../../../lib/format';
@@ -24,13 +25,15 @@ let project: Project | null = null;
 let files: ProjectFile[] = [];
 let requirements: Requirement[] = [];
 let fields: ProjectField[] = [];
+let members: MemberList | null = null;
 
 try {
-  [project, files, requirements, fields] = await Promise.all([
+  [project, files, requirements, fields, members] = await Promise.all([
     api<Project>(`/api/projects/${id}`, { token }),
     api<ProjectFile[]>(`/api/projects/${id}/files`, { token }),
     api<Requirement[]>(`/api/projects/${id}/requirements`, { token }),
     api<ProjectField[]>(`/api/projects/${id}/fields`, { token }),
+    api<MemberList>(`/api/projects/${id}/members`, { token }),
   ]);
 } catch (err) {
   if (!(err instanceof ApiError && err.status === 404)) throw err;
@@ -39,6 +42,11 @@ try {
 
 const deadline = project ? deadlineOf(project.due_date, project.status) : null;
 const progress = project ? timeProgress(project.start_date, project.due_date, project.status) : null;
+
+// Peran pengguna di proyek ini: mengatur kontrol yang ditampilkan (backend tetap memeriksa).
+const role = project?.role ?? 'viewer';
+const isOwner = role === 'owner';
+const myId = Astro.locals.user?.id ?? '';
 
 // Berkas dikelompokkan per item kelengkapan; sisanya tampil di "Berkas lainnya".
 const filesByReq = new Map<string, ProjectFile[]>();
@@ -55,6 +63,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
 ---
 
 <Layout title={project ? project.name : 'Tidak ditemukan'}>
+  <div class={`detail ${role}`}>
   {
     !project ? (
       <div class="card empty">
@@ -100,11 +109,11 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           }
 
           <div class="action-row">
-            <a href={`/projects/${project.id}/edit`} class="btn ghost">
+            <a href={`/projects/${project.id}/edit`} class="btn ghost can-edit">
               <Icon name="edit" />
               Ubah
             </a>
-            <form method="post" action={`/api/projects/${project.id}/duplicate`}>
+            <form method="post" action={`/api/projects/${project.id}/duplicate`} class="can-edit">
               <button class="btn ghost" type="submit" data-busy="Menduplikat…">
                 <Icon name="copy" />
                 Duplikat
@@ -113,6 +122,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             <form
               method="post"
               action={`/api/projects/${project.id}/delete`}
+              class="owner-only"
               onsubmit="return confirm('Hapus proyek ini beserta seluruh berkasnya? Tindakan ini tidak bisa dibatalkan.')"
             >
               <button class="btn danger" type="submit" data-busy="Menghapus…">
@@ -142,6 +152,79 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </dl>
 
+        <section class="section" id="anggota">
+          <div class="section-head">
+            <h2>Anggota</h2>
+            <span class="muted small">{(members?.members.length ?? 0) + 1} orang</span>
+          </div>
+
+          <div class="card members-card">
+            <ul class="member-list">
+              <li class="member-item">
+                <div class="member-main">
+                  <span class="member-name">{members?.owner.name}</span>
+                  <span class="muted small">{members?.owner.email}</span>
+                </div>
+                <span class="role-pill owner">Pemilik</span>
+              </li>
+              {
+                (members?.members ?? []).map((m) => (
+                  <li class="member-item">
+                    <div class="member-main">
+                      <span class="member-name">{m.name}</span>
+                      <span class="muted small">{m.email}</span>
+                    </div>
+                    <div class="member-tools">
+                      <span class="role-pill pill-readonly">{m.role === 'editor' ? 'Editor' : 'Viewer'}</span>
+                      <form method="post" action={`/api/projects/${project.id}/members/${m.user_id}/update`} class="owner-only role-form">
+                        <input type="hidden" name="anchor" value="#anggota" />
+                        <select name="role" aria-label={`Peran ${m.name}`} data-autosubmit>
+                          <option value="editor" selected={m.role === 'editor'}>Editor</option>
+                          <option value="viewer" selected={m.role === 'viewer'}>Viewer</option>
+                        </select>
+                      </form>
+                      <form method="post" action={`/api/projects/${project.id}/members/${m.user_id}/delete`} class="owner-only"
+                        onsubmit={`return confirm('Keluarkan ${m.name.replace(/["'\\]/g, '')} dari proyek ini?')`}>
+                        <input type="hidden" name="anchor" value="#anggota" />
+                        <button class="btn danger small" type="submit" data-busy="…">Keluarkan</button>
+                      </form>
+                    </div>
+                  </li>
+                ))
+              }
+            </ul>
+
+            <form method="post" action={`/api/projects/${project.id}/members`} class="member-add owner-only">
+              <input type="hidden" name="anchor" value="#anggota" />
+              <label class="field">
+                <span>Undang anggota lewat email</span>
+                <input type="email" name="email" required autocomplete="off" inputmode="email" placeholder="email@contoh.com" />
+                <span class="hint">Hanya akun yang sudah terdaftar yang bisa diundang.</span>
+              </label>
+              <label class="field">
+                <span>Peran</span>
+                <select name="role">
+                  <option value="editor" selected>Editor (bisa mengubah isi proyek)</option>
+                  <option value="viewer">Viewer (hanya melihat)</option>
+                </select>
+              </label>
+              <div class="form-actions">
+                <button class="btn primary" type="submit" data-busy="Mengundang…">Undang</button>
+              </div>
+            </form>
+
+            {
+              !isOwner && (
+                <form method="post" action={`/api/projects/${project.id}/members/${myId}/delete`} class="leave-only"
+                  onsubmit="return confirm('Keluar dari proyek ini? Anda tidak bisa melihatnya lagi kecuali diundang ulang.')">
+                  <input type="hidden" name="self" value="1" />
+                  <button class="btn ghost" type="submit" data-busy="Keluar…">Keluar dari proyek</button>
+                </form>
+              )
+            }
+          </div>
+        </section>
+
         <section class="section" id="informasi">
           <div class="section-head">
             <h2>Informasi detail</h2>
@@ -164,7 +247,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                           <InfoValue field={f} />
                         </div>
                       </div>
-                      <div class="info-tools">
+                      <div class="info-tools can-edit">
                         <form method="post" action={`/api/fields/${f.id}/move`} class="move-form">
                           <input type="hidden" name="project_id" value={project.id} />
                           <input type="hidden" name="anchor" value="#informasi" />
@@ -212,9 +295,9 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               )
             }
 
-            <div class="info-add">
+            <div class="info-add can-edit">
               <h3>Tambah informasi</h3>
-              <div class="suggest" aria-label="Saran cepat">
+              <div class="suggest can-edit" aria-label="Saran cepat">
                 <button type="button" class="chip-suggest" data-fill="Nama pemohon" data-fill-type="text">Nama pemohon</button>
                 <button type="button" class="chip-suggest" data-fill="Alamat" data-fill-type="multiline">Alamat</button>
                 <button type="button" class="chip-suggest" data-fill="Nomor telepon" data-fill-type="phone">Nomor telepon</button>
@@ -232,14 +315,14 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
         <section class="section" id="deskripsi">
           <div class="section-head">
             <h2>Deskripsi</h2>
-            <a href={`/projects/${project.id}/edit`} class="small">Ubah</a>
+            <a href={`/projects/${project.id}/edit`} class="small can-edit">Ubah</a>
           </div>
           <div class="card">
             {
               project.description ? (
                 <p class="description">{project.description}</p>
               ) : (
-                <p class="muted">Belum ada deskripsi. <a href={`/projects/${project.id}/edit`}>Tambahkan sekarang</a>.</p>
+                <p class="muted">Belum ada deskripsi. <a href={`/projects/${project.id}/edit`} class="can-edit">Tambahkan sekarang</a>.</p>
               )
             }
           </div>
@@ -267,7 +350,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               )
             }
 
-            <form method="post" action={`/api/projects/${project.id}/requirements`} class="req-add">
+            <form method="post" action={`/api/projects/${project.id}/requirements`} class="req-add can-edit">
               <input type="hidden" name="anchor" value="#kelengkapan" />
               <label class="sr-only" for="req-title">Nama berkas yang wajib ada</label>
               <input
@@ -283,7 +366,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                 Tambah
               </button>
             </form>
-            <div class="suggest" aria-label="Saran cepat">
+            <div class="suggest can-edit" aria-label="Saran cepat">
               {
                 suggestions.map((s) => (
                   <button type="button" class="chip-suggest" data-fill={s}>{s}</button>
@@ -313,7 +396,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                               {done ? `${r.file_count} berkas terunggah` : 'Belum ada berkas'}
                             </div>
                           </div>
-                          <details class="req-menu">
+                          <details class="req-menu can-edit">
                             <summary class="icon-btn" aria-label={`Opsi untuk ${r.title}`}>⋯</summary>
                             <div class="req-menu-body">
                               <form method="post" action={`/api/requirements/${r.id}/update`} class="req-rename">
@@ -353,7 +436,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                                     <span class="req-file-size">{formatBytes(f.size_bytes)}</span>
                                     <form
                                       method="post"
-                                      action={`/api/files/${f.id}/delete`}
+                                      action={`/api/files/${f.id}/delete`} class="can-edit"
                                       onsubmit={`return confirm('Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?')`}
                                     >
                                       <input type="hidden" name="project_id" value={project.id} />
@@ -369,7 +452,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                           )
                         }
 
-                        <form method="post" action={`/api/projects/${project.id}/files`} enctype="multipart/form-data" class="req-upload">
+                        <form method="post" action={`/api/projects/${project.id}/files`} enctype="multipart/form-data" class="req-upload can-edit">
                           <input type="hidden" name="requirement_id" value={r.id} />
                           <input type="hidden" name="anchor" value="#kelengkapan" />
                           <label class="btn ghost small req-btn">
@@ -393,7 +476,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             <span class="muted small">{looseFiles.length} berkas · maks. 25 MB</span>
           </div>
 
-          <form method="post" action={`/api/projects/${project.id}/files`} enctype="multipart/form-data" class="dropzone-form">
+          <form method="post" action={`/api/projects/${project.id}/files`} enctype="multipart/form-data" class="dropzone-form can-edit">
             <input type="hidden" name="anchor" value="#berkas" />
             <label class="dropzone">
               <span class="dz-ico"><Icon name="upload" /></span>
@@ -436,7 +519,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                         </a>
                         <form
                           method="post"
-                          action={`/api/files/${f.id}/delete`}
+                          action={`/api/files/${f.id}/delete`} class="can-edit"
                           onsubmit={`return confirm('Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?')`}
                         >
                           <input type="hidden" name="project_id" value={project.id} />
@@ -458,6 +541,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
   }
 
   <FilePreview />
+  </div>
 </Layout>
 
 <script>

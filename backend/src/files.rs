@@ -10,7 +10,14 @@ use sqlx::{FromRow, SqlitePool};
 use tokio_util::io::ReaderStream;
 use uuid::Uuid;
 
-use crate::{auth::AuthUser, error::AppError, now_iso, projects::fetch_project, AppState};
+use crate::{
+    access::{self, Role},
+    auth::AuthUser,
+    error::AppError,
+    now_iso,
+    projects::fetch_project,
+    AppState,
+};
 
 pub const MAX_UPLOAD_BYTES: usize = 25 * 1024 * 1024;
 
@@ -39,22 +46,23 @@ const FILE_SELECT: &str = "SELECT f.id, f.project_id, f.requirement_id, f.origin
     f.size_bytes, u.name AS uploaded_by_name, f.created_at
     FROM project_files f JOIN users u ON u.id = f.uploaded_by";
 
-/// Berkas hanya bisa diakses oleh pemilik proyeknya.
-async fn find_owned_file(
+/// Berkas diambil lalu peran pengguna di proyeknya diperiksa (lihat, atau ubah untuk hapus).
+async fn find_file_for(
     pool: &SqlitePool,
     file_id: &str,
-    owner_id: &str,
+    user_id: &str,
+    min: Role,
 ) -> Result<StoredFile, AppError> {
-    sqlx::query_as::<_, StoredFile>(
+    let file = sqlx::query_as::<_, StoredFile>(
         "SELECT f.id, f.project_id, f.original_name, f.mime_type, f.size_bytes
-         FROM project_files f JOIN projects p ON p.id = f.project_id
-         WHERE f.id = ? AND p.owner_id = ?",
+         FROM project_files f WHERE f.id = ?",
     )
     .bind(file_id)
-    .bind(owner_id)
     .fetch_optional(pool)
     .await?
-    .ok_or_else(|| AppError::NotFound("Berkas tidak ditemukan".into()))
+    .ok_or_else(|| AppError::NotFound("Berkas tidak ditemukan".into()))?;
+    access::require(pool, &file.project_id, user_id, min).await?;
+    Ok(file)
 }
 
 pub async fn list(
@@ -77,7 +85,7 @@ pub async fn upload(
     Path(project_id): Path<String>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<ProjectFile>), AppError> {
-    fetch_project(&state.pool, &project_id, &user.id).await?;
+    access::require(&state.pool, &project_id, &user.id, Role::Editor).await?;
 
     // Field bisa datang dalam urutan apa pun, jadi semua dibaca dulu.
     let mut requirement_id: Option<String> = None;
@@ -192,7 +200,7 @@ pub async fn download(
     Path(file_id): Path<String>,
     Query(query): Query<DownloadQuery>,
 ) -> Result<Response, AppError> {
-    let file = find_owned_file(&state.pool, &file_id, &user.id).await?;
+    let file = find_file_for(&state.pool, &file_id, &user.id, Role::Viewer).await?;
     let path = state.upload_dir.join(&file.project_id).join(&file.id);
     let handle = tokio::fs::File::open(&path)
         .await
@@ -236,7 +244,7 @@ pub async fn delete(
     AuthUser(user): AuthUser,
     Path(file_id): Path<String>,
 ) -> Result<StatusCode, AppError> {
-    let file = find_owned_file(&state.pool, &file_id, &user.id).await?;
+    let file = find_file_for(&state.pool, &file_id, &user.id, Role::Editor).await?;
     sqlx::query("DELETE FROM project_files WHERE id = ?")
         .bind(&file.id)
         .execute(&state.pool)

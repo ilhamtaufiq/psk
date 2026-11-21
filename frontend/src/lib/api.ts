@@ -60,6 +60,7 @@ export interface Project {
   file_count: number;
   req_total: number;
   req_done: number;
+  role: ProjectRole;
 }
 
 export interface Requirement {
@@ -175,4 +176,19 @@ export interface ProjectField {
   field_type: FieldType;
   value: string;
   position: number;
+}
+
+export type ProjectRole = 'owner' | 'editor' | 'viewer';
+
+export interface Member {
+  user_id: string;
+  name: string;
+  email: string;
+  role: ProjectRole;
+}
+
+export interface MemberList {
+  owner: Member;
+  members: Member[];
+  my_role: ProjectRole;
 }

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };
@@ -7,7 +7,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use uuid::Uuid;
 
-use crate::{auth::AuthUser, error::AppError, now_iso, AppState};
+use crate::{
+    access::{self, Role},
+    auth::AuthUser,
+    error::AppError,
+    now_iso, AppState,
+};
 
 /// Jenis bawaan yang di-seed untuk setiap pengguna: (slug, label).
 pub const DEFAULT_TYPES: [(&str, &str); 7] = [
@@ -148,13 +153,28 @@ async fn find_owned(pool: &SqlitePool, id: &str, owner_id: &str) -> Result<Proje
         .ok_or_else(|| AppError::NotFound("Jenis proyek tidak ditemukan".into()))
 }
 
+#[derive(Deserialize)]
+pub struct ListQuery {
+    /// Bila diisi, daftar yang dikembalikan adalah jenis milik pemilik proyek itu
+    /// (dipakai pengedit yang bukan pemilik).
+    project_id: Option<String>,
+}
+
 pub async fn list(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
+    Query(q): Query<ListQuery>,
 ) -> Result<Json<Vec<ProjectType>>, AppError> {
+    let owner = match q.project_id {
+        Some(pid) => {
+            access::require(&state.pool, &pid, &user.id, Role::Viewer).await?;
+            crate::projects::project_owner(&state.pool, &pid).await?
+        }
+        None => user.id.clone(),
+    };
     let sql = format!("{TYPE_SELECT} WHERE t.owner_id = ? ORDER BY t.label COLLATE NOCASE");
     let rows = sqlx::query_as::<_, ProjectType>(&sql)
-        .bind(&user.id)
+        .bind(&owner)
         .fetch_all(&state.pool)
         .await?;
     Ok(Json(rows))

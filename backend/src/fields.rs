@@ -8,7 +8,14 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use uuid::Uuid;
 
-use crate::{auth::AuthUser, error::AppError, now_iso, projects::fetch_project, AppState};
+use crate::{
+    access::{self, Role},
+    auth::AuthUser,
+    error::AppError,
+    now_iso,
+    projects::fetch_project,
+    AppState,
+};
 
 pub const FIELD_TYPES: [&str; 7] = ["text", "multiline", "date", "number", "email", "phone", "url"];
 const MAX_FIELDS_PER_PROJECT: i64 = 50;
@@ -105,15 +112,16 @@ fn check_value(field_type: &str, value: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Mengambil field milik pengguna; 404 bila tidak ada atau bukan miliknya.
-async fn find_owned_field(pool: &SqlitePool, id: &str, owner_id: &str) -> Result<ProjectField, AppError> {
-    let sql = format!("{FIELD_SELECT} JOIN projects p ON p.id = f.project_id WHERE f.id = ? AND p.owner_id = ?");
-    sqlx::query_as::<_, ProjectField>(&sql)
+/// Mengambil field lalu memeriksa peran pengguna di proyeknya.
+async fn find_owned_field(pool: &SqlitePool, id: &str, user_id: &str, min: Role) -> Result<ProjectField, AppError> {
+    let sql = format!("{FIELD_SELECT} WHERE f.id = ?");
+    let field = sqlx::query_as::<_, ProjectField>(&sql)
         .bind(id)
-        .bind(owner_id)
         .fetch_optional(pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Informasi tidak ditemukan".into()))
+        .ok_or_else(|| AppError::NotFound("Informasi tidak ditemukan".into()))?;
+    access::require(pool, &field.project_id, user_id, min).await?;
+    Ok(field)
 }
 
 pub async fn list(
@@ -136,7 +144,7 @@ pub async fn create(
     Path(project_id): Path<String>,
     Json(input): Json<FieldInput>,
 ) -> Result<(StatusCode, Json<ProjectField>), AppError> {
-    fetch_project(&state.pool, &project_id, &user.id).await?;
+    access::require(&state.pool, &project_id, &user.id, Role::Editor).await?;
     let (label, field_type, value) = validate(input)?;
 
     let (count, max_pos): (i64, i64) = sqlx::query_as(
@@ -182,7 +190,7 @@ pub async fn update(
     Path(id): Path<String>,
     Json(input): Json<FieldInput>,
 ) -> Result<Json<ProjectField>, AppError> {
-    find_owned_field(&state.pool, &id, &user.id).await?;
+    find_owned_field(&state.pool, &id, &user.id, Role::Editor).await?;
     let (label, field_type, value) = validate(input)?;
 
     sqlx::query("UPDATE project_fields SET label = ?, field_type = ?, value = ?, updated_at = ? WHERE id = ?")
@@ -194,7 +202,7 @@ pub async fn update(
         .execute(&state.pool)
         .await?;
 
-    Ok(Json(find_owned_field(&state.pool, &id, &user.id).await?))
+    Ok(Json(find_owned_field(&state.pool, &id, &user.id, Role::Viewer).await?))
 }
 
 pub async fn delete(
@@ -202,7 +210,7 @@ pub async fn delete(
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AppError> {
-    find_owned_field(&state.pool, &id, &user.id).await?;
+    find_owned_field(&state.pool, &id, &user.id, Role::Editor).await?;
     sqlx::query("DELETE FROM project_fields WHERE id = ?")
         .bind(&id)
         .execute(&state.pool)
@@ -217,7 +225,7 @@ pub async fn move_field(
     Path(id): Path<String>,
     Json(input): Json<MoveInput>,
 ) -> Result<StatusCode, AppError> {
-    let field = find_owned_field(&state.pool, &id, &user.id).await?;
+    let field = find_owned_field(&state.pool, &id, &user.id, Role::Editor).await?;
     let (op, order) = match input.direction.as_str() {
         "up" => ("<", "DESC"),
         "down" => (">", "ASC"),

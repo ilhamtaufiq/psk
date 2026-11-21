@@ -129,6 +129,9 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
                   <div class="badges">
                     <StatusBadge status={p.status} />
                     <span class="type-pill">{p.project_type_label}</span>
+                    {p.role !== 'owner' && (
+                      <span class="type-pill share-pill">Dibagikan · {p.role === 'editor' ? 'Editor' : 'Viewer'}</span>
+                    )}
                   </div>
                   <span class="count" title="Jumlah berkas">
                     <Icon name="paperclip" />

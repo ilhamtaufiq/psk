@@ -7,7 +7,14 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use uuid::Uuid;
 
-use crate::{auth::AuthUser, error::AppError, now_iso, projects::fetch_project, AppState};
+use crate::{
+    access::{self, Role},
+    auth::AuthUser,
+    error::AppError,
+    now_iso,
+    projects::fetch_project,
+    AppState,
+};
 
 const MAX_REQUIREMENTS_PER_PROJECT: i64 = 200;
 
@@ -39,21 +46,21 @@ fn clean_title(raw: &str) -> Result<String, AppError> {
     Ok(title)
 }
 
-/// Mengambil item daftar yang proyeknya milik pengguna.
+/// Mengambil item daftar lalu memeriksa peran pengguna di proyeknya.
 async fn find_owned_requirement(
     pool: &SqlitePool,
     id: &str,
-    owner_id: &str,
+    user_id: &str,
+    min: Role,
 ) -> Result<Requirement, AppError> {
-    let sql = format!(
-        "{REQUIREMENT_SELECT} JOIN projects p ON p.id = r.project_id WHERE r.id = ? AND p.owner_id = ?"
-    );
-    sqlx::query_as::<_, Requirement>(&sql)
+    let sql = format!("{REQUIREMENT_SELECT} WHERE r.id = ?");
+    let req = sqlx::query_as::<_, Requirement>(&sql)
         .bind(id)
-        .bind(owner_id)
         .fetch_optional(pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Item daftar berkas tidak ditemukan".into()))
+        .ok_or_else(|| AppError::NotFound("Item daftar berkas tidak ditemukan".into()))?;
+    access::require(pool, &req.project_id, user_id, min).await?;
+    Ok(req)
 }
 
 pub async fn list(
@@ -76,7 +83,7 @@ pub async fn create(
     Path(project_id): Path<String>,
     Json(input): Json<TitleInput>,
 ) -> Result<(StatusCode, Json<Requirement>), AppError> {
-    fetch_project(&state.pool, &project_id, &user.id).await?;
+    access::require(&state.pool, &project_id, &user.id, Role::Editor).await?;
     let title = clean_title(&input.title)?;
 
     let (count,): (i64,) =
@@ -104,7 +111,7 @@ pub async fn create(
     .execute(&state.pool)
     .await?;
 
-    let created = find_owned_requirement(&state.pool, &id, &user.id).await?;
+    let created = find_owned_requirement(&state.pool, &id, &user.id, Role::Viewer).await?;
     Ok((StatusCode::CREATED, Json(created)))
 }
 
@@ -114,7 +121,7 @@ pub async fn update(
     Path(id): Path<String>,
     Json(input): Json<TitleInput>,
 ) -> Result<Json<Requirement>, AppError> {
-    find_owned_requirement(&state.pool, &id, &user.id).await?;
+    find_owned_requirement(&state.pool, &id, &user.id, Role::Editor).await?;
     let title = clean_title(&input.title)?;
 
     sqlx::query("UPDATE project_requirements SET title = ?, updated_at = ? WHERE id = ?")
@@ -124,7 +131,7 @@ pub async fn update(
         .execute(&state.pool)
         .await?;
 
-    Ok(Json(find_owned_requirement(&state.pool, &id, &user.id).await?))
+    Ok(Json(find_owned_requirement(&state.pool, &id, &user.id, Role::Viewer).await?))
 }
 
 /// Menghapus item daftar. Berkas yang sudah terunggah tetap ada (kaitannya di-NULL-kan).
@@ -133,7 +140,7 @@ pub async fn delete(
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AppError> {
-    find_owned_requirement(&state.pool, &id, &user.id).await?;
+    find_owned_requirement(&state.pool, &id, &user.id, Role::Editor).await?;
     sqlx::query("DELETE FROM project_requirements WHERE id = ?")
         .bind(&id)
         .execute(&state.pool)

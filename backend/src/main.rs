@@ -1,9 +1,11 @@
+mod access;
 mod auth;
 mod dashboard;
 mod error;
 mod fields;
 mod files;
 mod health;
+mod members;
 mod projects;
 mod requirements;
 mod types;
@@ -82,6 +84,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
             "/api/projects/{id}/duplicate",
             post(projects::duplicate),
+        )
+        .route(
+            "/api/projects/{id}/members",
+            get(members::list).post(members::add),
+        )
+        .route(
+            "/api/projects/{id}/members/{uid}",
+            put(members::update_role).delete(members::remove),
         )
         .route(
             "/api/projects/{id}",
