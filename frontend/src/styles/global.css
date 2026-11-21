@@ -1632,6 +1632,150 @@ a.kpi:hover {
   }
 }
 
+/* ---------- Informasi detail (dinamis) ---------- */
+[hidden] {
+  display: none !important;
+}
+
+.info-card {
+  display: grid;
+  gap: 18px;
+}
+
+.info-list {
+  display: grid;
+  gap: 10px;
+}
+
+.info-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.info-value {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+}
+
+.pre {
+  display: block;
+  white-space: pre-wrap;
+  font-weight: 500;
+}
+
+.info-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.move-form {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+}
+
+.move-form .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.info-edit {
+  position: relative;
+  margin-left: auto;
+}
+
+.info-edit > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.info-edit > summary::-webkit-details-marker {
+  display: none;
+}
+
+.info-edit[open] > summary {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.info-edit-body {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.info-delete {
+  margin: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.info-delete .btn {
+  width: 100%;
+}
+
+.info-add {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.info-add h3 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.field-form {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.field-form .form-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.field-form .form-actions .btn {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .info-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .field-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .field-form .form-actions .btn {
+    width: auto;
+  }
+}
+
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
   margin: 0;

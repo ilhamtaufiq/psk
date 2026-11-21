@@ -1,0 +1,31 @@
+---
+// Menampilkan nilai informasi detail sesuai jenisnya.
+import { type ProjectField } from '../lib/api';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  field: ProjectField;
+}
+
+const { field } = Astro.props;
+const v = field.value;
+const phoneHref = `tel:${v.replace(/[^+\d]/g, '')}`;
+---
+
+{
+  v === '' ? (
+    <span class="muted">Belum diisi</span>
+  ) : field.field_type === 'email' ? (
+    <a href={`mailto:${v}`}>{v}</a>
+  ) : field.field_type === 'phone' ? (
+    <a href={phoneHref}>{v}</a>
+  ) : field.field_type === 'url' ? (
+    <a href={v} target="_blank" rel="noopener noreferrer">{v}</a>
+  ) : field.field_type === 'date' ? (
+    <span>{formatDate(v)}</span>
+  ) : field.field_type === 'multiline' ? (
+    <span class="pre">{v}</span>
+  ) : (
+    <span>{v}</span>
+  )
+}

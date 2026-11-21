@@ -121,14 +121,47 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
         select.form.requestSubmit();
       });
 
-      // Saran cepat nama berkas: klik untuk mengisi kolom "Tambah" di sebelahnya.
+      // Saran cepat: klik untuk mengisi nama (dan jenis, bila ada) di form terdekat.
       document.addEventListener('click', (event) => {
-        const chip = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-fill]');
+        const target = event.target as HTMLElement;
+        const cancel = target.closest<HTMLButtonElement>('button[data-cancel]');
+        if (cancel) {
+          cancel.closest('details')?.removeAttribute('open');
+          return;
+        }
+        const chip = target.closest<HTMLButtonElement>('button[data-fill]');
         if (!chip) return;
-        const input = chip.closest('.checklist')?.querySelector<HTMLInputElement>('input[name="title"]');
+        const scope = chip.closest('.checklist, .info-add');
+        const input = scope?.querySelector<HTMLInputElement>('input[name="title"], input[name="label"]');
         if (!input) return;
         input.value = chip.dataset.fill ?? '';
+        const typeSelect = scope?.querySelector<HTMLSelectElement>('select[name="field_type"]');
+        if (typeSelect && chip.dataset.fillType) {
+          typeSelect.value = chip.dataset.fillType;
+          typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
         input.focus();
+      });
+
+      // Formulir informasi detail: isi berubah sesuai jenis (paragraf memakai textarea).
+      const INPUT_TYPES: Record<string, string> = {
+        text: 'text', date: 'date', number: 'text', email: 'email', phone: 'tel', url: 'url',
+      };
+      document.addEventListener('change', (event) => {
+        const select = event.target as HTMLSelectElement;
+        if (!select.matches('select[data-field-type]') || !select.form) return;
+        const isMulti = select.value === 'multiline';
+        const text = select.form.querySelector<HTMLInputElement>('[data-value-text]');
+        const area = select.form.querySelector<HTMLTextAreaElement>('[data-value-multiline]');
+        if (text) {
+          text.hidden = isMulti;
+          text.disabled = isMulti;
+          text.type = INPUT_TYPES[select.value] ?? 'text';
+        }
+        if (area) {
+          area.hidden = !isMulti;
+          area.disabled = !isMulti;
+        }
       });
 
       // Saat kembali lewat riwayat (bfcache), pulihkan tombol yang masih nonaktif.

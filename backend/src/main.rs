@@ -1,6 +1,7 @@
 mod auth;
 mod dashboard;
 mod error;
+mod fields;
 mod files;
 mod health;
 mod projects;
@@ -90,6 +91,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/projects/{id}/requirements",
             get(requirements::list).post(requirements::create),
         )
+        .route(
+            "/api/projects/{id}/fields",
+            get(fields::list).post(fields::create),
+        )
+        .route(
+            "/api/fields/{id}",
+            put(fields::update).delete(fields::delete),
+        )
+        .route("/api/fields/{id}/move", post(fields::move_field))
         .route(
             "/api/requirements/{id}",
             put(requirements::update).delete(requirements::delete),

@@ -20,7 +20,9 @@ type Name =
   | 'sort'
   | 'x'
   | 'home'
-  | 'copy';
+  | 'copy'
+  | 'arrow-up'
+  | 'arrow-down';
 
 interface Props {
   name: Name;
@@ -46,6 +48,8 @@ const paths: Record<Name, string> = {
   eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>',
   tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
   sort: '<path d="M11 5h10M11 9h7M11 13h4M3 17l3 3 3-3M6 4v16"/>',
+  'arrow-up': '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  'arrow-down': '<path d="M12 5v14M19 12l-7 7-7-7"/>',
   copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',

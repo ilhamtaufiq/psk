@@ -1,0 +1,90 @@
+---
+// Formulir informasi detail. Isi berubah sesuai jenis: paragraf memakai textarea,
+// jenis lain memakai input dengan tipe yang sesuai (tanggal, email, tel, url).
+import Icon from './Icon.astro';
+import { FIELD_TYPE_LABELS, type FieldType } from '../lib/api';
+
+interface Props {
+  action: string;
+  anchor?: string;
+  projectId?: string;
+  label?: string;
+  fieldType?: FieldType;
+  value?: string;
+  submitLabel: string;
+  busyLabel: string;
+  cancelLabel?: string;
+}
+
+const {
+  action,
+  anchor = '#informasi',
+  projectId,
+  label = '',
+  fieldType = 'text',
+  value = '',
+  submitLabel,
+  busyLabel,
+  cancelLabel,
+} = Astro.props;
+
+const types = Object.keys(FIELD_TYPE_LABELS) as FieldType[];
+const INPUT_TYPES: Record<string, string> = {
+  text: 'text',
+  date: 'date',
+  number: 'text',
+  email: 'email',
+  phone: 'tel',
+  url: 'url',
+};
+const isMulti = fieldType === 'multiline';
+const inputType = INPUT_TYPES[fieldType] ?? 'text';
+---
+
+<form method="post" action={action} class="field-form" data-field-form>
+  <input type="hidden" name="anchor" value={anchor} />
+  {projectId && <input type="hidden" name="project_id" value={projectId} />}
+
+  <div class="form-grid two">
+    <label class="field">
+      <span>Nama informasi</span>
+      <input name="label" required maxlength="100" value={label} placeholder="mis. Nama pemohon" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span>Jenis</span>
+      <select name="field_type" data-field-type>
+        {
+          types.map((t) => (
+            <option value={t} selected={t === fieldType}>{FIELD_TYPE_LABELS[t]}</option>
+          ))
+        }
+      </select>
+    </label>
+  </div>
+
+  <label class="field">
+    <span>Isi</span>
+    <input
+      name="value"
+      type={inputType as 'text' | 'date' | 'email' | 'tel' | 'url'}
+      value={isMulti ? '' : value}
+      inputmode={fieldType === 'number' ? 'decimal' : undefined}
+      data-value-text
+      hidden={isMulti}
+      disabled={isMulti}
+    />
+    <textarea
+      name="value"
+      rows="3"
+      maxlength="5000"
+      data-value-multiline
+      hidden={!isMulti}
+      disabled={!isMulti}
+    >{isMulti ? value : ''}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit" data-busy={busyLabel}>{submitLabel}</button>
+    {cancelLabel && <button class="btn ghost" type="button" data-cancel>{cancelLabel}</button>}
+  </div>
+</form>

@@ -156,3 +156,24 @@ export interface DashboardData {
   uploads_by_month: Bucket[];
   recent: Array<{ id: string; name: string; status: ProjectStatus; updated_at: string }>;
 }
+
+export type FieldType = 'text' | 'multiline' | 'date' | 'number' | 'email' | 'phone' | 'url';
+
+export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+  text: 'Teks singkat',
+  multiline: 'Paragraf',
+  date: 'Tanggal',
+  number: 'Angka',
+  email: 'Email',
+  phone: 'Nomor telepon',
+  url: 'Tautan',
+};
+
+export interface ProjectField {
+  id: string;
+  project_id: string;
+  label: string;
+  field_type: FieldType;
+  value: string;
+  position: number;
+}

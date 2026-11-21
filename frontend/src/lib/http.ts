@@ -39,7 +39,7 @@ export function errorUrl(path: string, message: string): string {
  * Hanya dua anchor yang diizinkan.
  */
 export function backTo(projectId: string, anchor: FormDataEntryValue | null): string {
-  const safe = anchor === '#kelengkapan' || anchor === '#berkas' ? anchor : '';
+  const safe = ['#informasi', '#kelengkapan', '#berkas'].includes(String(anchor)) ? String(anchor) : '';
   return `/projects/${projectId}${safe}`;
 }
 

@@ -275,7 +275,7 @@ fn copy_name(original: &str) -> String {
     format!("{base}{COPY_SUFFIX}")
 }
 
-/// Menduplikat proyek: detail dan daftar kelengkapan ikut disalin, berkas tidak.
+/// Menduplikat proyek: detail, informasi detail, dan daftar kelengkapan ikut disalin; berkas tidak.
 /// Status salinan kembali ke "Perencanaan" karena ini proyek baru.
 pub async fn duplicate(
     State(state): State<AppState>,
@@ -322,6 +322,31 @@ pub async fn duplicate(
         .bind(Uuid::new_v4().to_string())
         .bind(&new_id)
         .bind(&title)
+        .bind(&created_at)
+        .bind(&now)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    // Informasi detail ikut disalin (nilainya tetap, bisa diubah di salinan).
+    let details: Vec<(String, String, String, i64, String)> = sqlx::query_as(
+        "SELECT label, field_type, value, position, created_at FROM project_fields WHERE project_id = ?",
+    )
+    .bind(&id)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    for (label, field_type, value, position, created_at) in details {
+        sqlx::query(
+            "INSERT INTO project_fields (id, project_id, label, field_type, value, position, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .bind(&new_id)
+        .bind(&label)
+        .bind(&field_type)
+        .bind(&value)
+        .bind(position)
         .bind(&created_at)
         .bind(&now)
         .execute(&mut *tx)

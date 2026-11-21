@@ -7,10 +7,13 @@ import {
   ApiError,
   type Project,
   type ProjectFile,
+  type ProjectField,
   type Requirement,
 } from '../../../lib/api';
 import { deadlineOf, fileKind, formatBytes, formatDate, timeProgress } from '../../../lib/format';
 import { previewKind } from '../../../lib/preview';
+import FieldForm from '../../../components/FieldForm.astro';
+import InfoValue from '../../../components/InfoValue.astro';
 import { PROJECT_TYPE_LABELS } from '../../../lib/api';
 import FilePreview from '../../../components/FilePreview.astro';
 
@@ -21,12 +24,14 @@ const error = Astro.url.searchParams.get('error');
 let project: Project | null = null;
 let files: ProjectFile[] = [];
 let requirements: Requirement[] = [];
+let fields: ProjectField[] = [];
 
 try {
-  [project, files, requirements] = await Promise.all([
+  [project, files, requirements, fields] = await Promise.all([
     api<Project>(`/api/projects/${id}`, { token }),
     api<ProjectFile[]>(`/api/projects/${id}/files`, { token }),
     api<Requirement[]>(`/api/projects/${id}/requirements`, { token }),
+    api<ProjectField[]>(`/api/projects/${id}/fields`, { token }),
   ]);
 } catch (err) {
   if (!(err instanceof ApiError && err.status === 404)) throw err;
@@ -137,6 +142,109 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             <dd>{formatDate(project.updated_at, true)}</dd>
           </div>
         </dl>
+
+        <section class="section" id="informasi">
+          <div class="section-head">
+            <h2>Informasi detail</h2>
+            <span class="muted small">{fields.length} informasi</span>
+          </div>
+
+          <div class="card info-card">
+            {
+              fields.length === 0 ? (
+                <p class="muted small">
+                  Belum ada informasi. Tambahkan data proyek seperti nama pemohon atau alamat, lalu atur jenis dan urutannya.
+                </p>
+              ) : (
+                <div class="info-list">
+                  {fields.map((f, i) => (
+                    <div class="info-item">
+                      <div class="info-body">
+                        <p class="info-label">{f.label}</p>
+                        <div class="info-value">
+                          <InfoValue field={f} />
+                        </div>
+                      </div>
+                      <div class="info-tools">
+                        <form method="post" action={`/api/fields/${f.id}/move`} class="move-form">
+                          <input type="hidden" name="project_id" value={project.id} />
+                          <input type="hidden" name="anchor" value="#informasi" />
+                          <button class="icon-btn sm" type="submit" name="direction" value="up" disabled={i === 0} aria-label={`Naikkan ${f.label}`} title="Naikkan">
+                            <Icon name="arrow-up" />
+                          </button>
+                          <button class="icon-btn sm" type="submit" name="direction" value="down" disabled={i === fields.length - 1} aria-label={`Turunkan ${f.label}`} title="Turunkan">
+                            <Icon name="arrow-down" />
+                          </button>
+                        </form>
+                        <details class="info-edit">
+                          <summary class="icon-btn sm" aria-label={`Ubah ${f.label}`} title="Ubah">
+                            <Icon name="edit" />
+                          </summary>
+                          <div class="info-edit-body">
+                            <FieldForm
+                              action={`/api/fields/${f.id}/update`}
+                              projectId={project.id}
+                              label={f.label}
+                              fieldType={f.field_type}
+                              value={f.value}
+                              submitLabel="Simpan"
+                              busyLabel="Menyimpan…"
+                              cancelLabel="Batal"
+                            />
+                            <form
+                              method="post"
+                              action={`/api/fields/${f.id}/delete`}
+                              class="info-delete"
+                              onsubmit={`return confirm('Hapus informasi "${f.label.replace(/["'\\]/g, '')}"?')`}
+                            >
+                              <input type="hidden" name="project_id" value={project.id} />
+                              <input type="hidden" name="anchor" value="#informasi" />
+                              <button class="btn danger small" type="submit" data-busy="Menghapus…">
+                                <Icon name="trash" />
+                                Hapus informasi
+                              </button>
+                            </form>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+
+            <div class="info-add">
+              <h3>Tambah informasi</h3>
+              <div class="suggest" aria-label="Saran cepat">
+                <button type="button" class="chip-suggest" data-fill="Nama pemohon" data-fill-type="text">Nama pemohon</button>
+                <button type="button" class="chip-suggest" data-fill="Alamat" data-fill-type="multiline">Alamat</button>
+                <button type="button" class="chip-suggest" data-fill="Nomor telepon" data-fill-type="phone">Nomor telepon</button>
+                <button type="button" class="chip-suggest" data-fill="Email" data-fill-type="email">Email</button>
+              </div>
+              <FieldForm
+                action={`/api/projects/${project.id}/fields`}
+                submitLabel="Tambah informasi"
+                busyLabel="Menambah…"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="deskripsi">
+          <div class="section-head">
+            <h2>Deskripsi</h2>
+            <a href={`/projects/${project.id}/edit`} class="small">Ubah</a>
+          </div>
+          <div class="card">
+            {
+              project.description ? (
+                <p class="description">{project.description}</p>
+              ) : (
+                <p class="muted">Belum ada deskripsi. <a href={`/projects/${project.id}/edit`}>Tambahkan sekarang</a>.</p>
+              )
+            }
+          </div>
+        </section>
 
         <section class="section" id="kelengkapan">
           <div class="section-head">
