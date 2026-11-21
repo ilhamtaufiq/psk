@@ -4,11 +4,12 @@ import { errorUrl, redirectTo, setSessionCookie } from '../../lib/http';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const form = await request.formData();
+  const email = String(form.get('email') ?? '').trim();
   try {
     const data = await api<{ token: string }>('/api/auth/login', {
       method: 'POST',
       json: {
-        email: String(form.get('email') ?? ''),
+        email,
         password: String(form.get('password') ?? ''),
       },
     });
@@ -16,6 +17,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return redirectTo('/dashboard');
   } catch (err) {
     const message = err instanceof ApiError ? err.message : 'Gagal masuk, coba lagi';
-    return redirectTo(errorUrl('/login', message));
+    // Email dikembalikan ke form agar pengguna tidak perlu mengetik ulang.
+    const location = errorUrl('/login', message) + (email ? `&email=${encodeURIComponent(email)}` : '');
+    return redirectTo(location);
   }
 };

@@ -67,6 +67,10 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
                 <div class="account-menu">
                   <p class="account-name">{user.name}</p>
                   <p class="account-mail">{user.email}</p>
+                  <a class="btn ghost block" href="/jenis">
+                    <Icon name="tag" />
+                    Jenis proyek
+                  </a>
                   <form method="post" action="/api/logout">
                     <button class="btn ghost block" type="submit" data-busy="Keluar…">
                       <Icon name="logout" />

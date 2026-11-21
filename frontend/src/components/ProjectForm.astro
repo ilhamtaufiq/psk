@@ -51,7 +51,7 @@ const currentType = project?.project_type ?? types.find((t) => t.slug === 'lainn
   </fieldset>
 
   <fieldset class="chips">
-    <legend>Jenis proyek</legend>
+    <legend>Jenis proyek <a href="/jenis" class="legend-action">Kelola jenis</a></legend>
     {types.length === 0 && (
       <p class="hint">Belum ada jenis. <a href="/jenis">Tambahkan jenis dulu</a>.</p>
     )}

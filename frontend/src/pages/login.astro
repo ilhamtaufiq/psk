@@ -3,35 +3,97 @@ import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
 
 const error = Astro.url.searchParams.get('error');
+const email = Astro.url.searchParams.get('email') ?? '';
+const features = [
+  { icon: 'calendar', text: 'Pantau tenggat dan progres setiap proyek' },
+  { icon: 'check', text: 'Lacak kelengkapan berkas dalam satu daftar' },
+  { icon: 'paperclip', text: 'Simpan dan bagikan berkas ke tim' },
+] as const;
 ---
 
 <Layout title="Masuk">
-  <section class="auth">
-    <div class="auth-hero">
-      <img class="auth-logo" src="/logo.svg" width="56" height="56" alt="Proyek Selepas Kerja" />
-      <div>
-        <h1>Selamat datang kembali</h1>
-        <p class="sub">Masuk untuk melanjutkan proyek dan berkas Anda.</p>
-      </div>
-    </div>
+  <div class="auth-split">
+    <aside class="auth-aside" aria-hidden="true">
+      <img class="auth-aside-art" src="/logo.svg" width="112" height="112" alt="" />
+      <h2>Kerja lebih rapi, pulang lebih tenang.</h2>
+      <ul class="auth-points">
+        {features.map((f) => (
+          <li>
+            <span class="auth-point-ico"><Icon name={f.icon} /></span>
+            <span>{f.text}</span>
+          </li>
+        ))}
+      </ul>
+    </aside>
 
-    <div class="card auth-card">
-      {error && <div class="alert error" role="alert">{error}</div>}
-      <form method="post" action="/api/login" class="form">
-        <label class="field">
-          <span>Email</span>
-          <input type="email" name="email" required autocomplete="email" inputmode="email" autofocus />
-        </label>
-        <label class="field">
-          <span>Password</span>
-          <input type="password" name="password" required autocomplete="current-password" />
-        </label>
-        <div class="form-actions">
-          <button class="btn primary" type="submit" data-busy="Memproses…">Masuk</button>
+    <section class="auth-main">
+      <header class="auth-head">
+        <img class="auth-logo" src="/logo.svg" width="56" height="56" alt="" />
+        <div>
+          <h1>Selamat datang kembali</h1>
+          <p class="sub">Masuk untuk melanjutkan proyek dan berkas Anda.</p>
         </div>
-      </form>
-    </div>
+      </header>
 
-    <p class="auth-foot">Belum punya akun? <a href="/register">Daftar sekarang</a></p>
-  </section>
+      <div class="card auth-card">
+        {error && <div class="alert error" role="alert"><Icon name="x" /><span>{error}</span></div>}
+
+        <form method="post" action="/api/login" class="form auth-form" data-login>
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              required
+              value={email}
+              autocomplete="email"
+              inputmode="email"
+              placeholder="nama@contoh.com"
+              autofocus={!email}
+            />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <span class="pw-wrap">
+              <input type="password" name="password" required autocomplete="current-password" autofocus={!!email} data-password />
+              <button type="button" class="pw-toggle" aria-pressed="false" aria-label="Tampilkan password" data-pw-toggle>
+                <Icon name="eye" />
+              </button>
+            </span>
+            <span class="hint field-hint-caps" data-caps hidden>Caps Lock aktif.</span>
+          </label>
+
+          <div class="form-actions">
+            <button class="btn primary block" type="submit" data-busy="Memproses…">Masuk</button>
+          </div>
+        </form>
+      </div>
+
+      <p class="auth-foot">Belum punya akun? <a href="/register">Daftar sekarang</a></p>
+    </section>
+  </div>
 </Layout>
+
+<script>
+  // Tampilkan / sembunyikan password dan peringatan Caps Lock.
+  const pw = document.querySelector<HTMLInputElement>('[data-password]');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-pw-toggle]');
+  const caps = document.querySelector<HTMLElement>('[data-caps]');
+
+  toggle?.addEventListener('click', () => {
+    if (!pw) return;
+    const show = pw.type === 'password';
+    pw.type = show ? 'text' : 'password';
+    toggle.setAttribute('aria-pressed', String(show));
+    toggle.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+    pw.focus();
+  });
+
+  const checkCaps = (e: KeyboardEvent) => {
+    if (caps) caps.hidden = !e.getModifierState('CapsLock');
+  };
+  pw?.addEventListener('keydown', checkCaps);
+  pw?.addEventListener('keyup', checkCaps);
+  pw?.addEventListener('blur', () => { if (caps) caps.hidden = true; });
+</script>

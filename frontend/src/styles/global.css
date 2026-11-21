@@ -3366,3 +3366,195 @@ a.kpi:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Halaman masuk (layout terpisah)
+   ========================================================================== */
+.auth-split {
+  display: grid;
+  gap: 24px;
+  min-height: calc(100dvh - var(--top-h) - 24px);
+  align-content: start;
+  padding-top: 16px;
+}
+
+.auth-aside {
+  display: none;
+}
+
+.auth-head {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-head h1 {
+  font-size: 1.6rem;
+}
+
+.auth-head .sub {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-main {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.auth-card {
+  padding: 22px;
+}
+
+.auth-form .form-actions .btn {
+  min-height: 50px;
+  font-size: 1rem;
+}
+
+.pw-wrap {
+  position: relative;
+  display: block;
+}
+
+.pw-wrap input {
+  padding-right: 52px;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.pw-toggle:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.pw-toggle[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.pw-toggle svg {
+  width: 19px;
+  height: 19px;
+}
+
+.field-hint-caps {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.auth-foot {
+  text-align: center;
+  color: var(--muted);
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .auth-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    min-height: calc(100dvh - var(--top-h));
+    margin: 0 -24px;
+  }
+
+  .auth-aside {
+    display: grid;
+    align-content: center;
+    gap: 22px;
+    padding: 56px 56px;
+    background:
+      radial-gradient(90% 70% at 100% 0%, rgb(255 255 255 / 0.18), transparent 60%),
+      linear-gradient(150deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff;
+  }
+
+  .auth-aside-art {
+    width: 112px;
+    height: 112px;
+    border-radius: 28px;
+    box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.4);
+  }
+
+  .auth-aside h2 {
+    font-size: 2rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    max-width: 22ch;
+  }
+
+  .auth-points {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  .auth-points li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1rem;
+    font-weight: 560;
+  }
+
+  .auth-point-ico {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: rgb(255 255 255 / 0.18);
+  }
+
+  .auth-point-ico svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .auth-main {
+    padding: 56px 40px;
+    align-content: center;
+    max-width: none;
+    margin: 0;
+    width: 100%;
+  }
+
+  .auth-head {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+  }
+
+  .auth-head .auth-logo {
+    display: none;
+  }
+
+  .auth-main > .auth-foot {
+    margin-top: -8px;
+  }
+}
+
+/* Tautan kecil di judul bagian form (mis. "Kelola jenis") */
+.legend-action {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
