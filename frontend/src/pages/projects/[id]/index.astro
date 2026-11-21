@@ -100,6 +100,12 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               <Icon name="edit" />
               Ubah
             </a>
+            <form method="post" action={`/api/projects/${project.id}/duplicate`}>
+              <button class="btn ghost" type="submit" data-busy="Menduplikat…">
+                <Icon name="copy" />
+                Duplikat
+              </button>
+            </form>
             <form
               method="post"
               action={`/api/projects/${project.id}/delete`}

@@ -71,6 +71,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             get(projects::list).post(projects::create),
         )
         .route(
+            "/api/projects/{id}/duplicate",
+            post(projects::duplicate),
+        )
+        .route(
             "/api/projects/{id}",
             get(projects::get)
                 .put(projects::update)

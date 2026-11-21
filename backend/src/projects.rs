@@ -265,3 +265,71 @@ pub async fn delete(
     let _ = tokio::fs::remove_dir_all(state.upload_dir.join(&id)).await;
     Ok(StatusCode::NO_CONTENT)
 }
+
+const COPY_SUFFIX: &str = " (salinan)";
+
+/// Nama salinan: "<nama> (salinan)", dipotong agar tetap di bawah batas 150 karakter.
+fn copy_name(original: &str) -> String {
+    let keep = 150 - COPY_SUFFIX.chars().count();
+    let base: String = original.chars().take(keep).collect();
+    format!("{base}{COPY_SUFFIX}")
+}
+
+/// Menduplikat proyek: detail dan daftar kelengkapan ikut disalin, berkas tidak.
+/// Status salinan kembali ke "Perencanaan" karena ini proyek baru.
+pub async fn duplicate(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(id): Path<String>,
+) -> Result<(StatusCode, Json<Project>), AppError> {
+    let source = fetch_project(&state.pool, &id, &user.id).await?;
+
+    let new_id = Uuid::new_v4().to_string();
+    let now = now_iso();
+    let name = copy_name(&source.name);
+
+    // Satu transaksi: salinan tidak pernah tersimpan setengah jadi.
+    let mut tx = state.pool.begin().await?;
+
+    sqlx::query(
+        "INSERT INTO projects (id, owner_id, name, description, status, project_type, start_date, due_date, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'planning', ?, ?, ?, ?, ?)",
+    )
+    .bind(&new_id)
+    .bind(&user.id)
+    .bind(&name)
+    .bind(&source.description)
+    .bind(&source.project_type)
+    .bind(&source.start_date)
+    .bind(&source.due_date)
+    .bind(&now)
+    .bind(&now)
+    .execute(&mut *tx)
+    .await?;
+
+    let items: Vec<(String, String)> = sqlx::query_as(
+        "SELECT title, created_at FROM project_requirements WHERE project_id = ? ORDER BY created_at ASC",
+    )
+    .bind(&id)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    for (title, created_at) in items {
+        sqlx::query(
+            "INSERT INTO project_requirements (id, project_id, title, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .bind(&new_id)
+        .bind(&title)
+        .bind(&created_at)
+        .bind(&now)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    tx.commit().await?;
+
+    let project = fetch_project(&state.pool, &new_id, &user.id).await?;
+    Ok((StatusCode::CREATED, Json(project)))
+}
