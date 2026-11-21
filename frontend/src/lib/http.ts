@@ -31,7 +31,11 @@ export function redirectTo(location: string): Response {
 
 /** Membentuk URL dengan pesan error di query string. */
 export function errorUrl(path: string, message: string): string {
-  return `${path}?error=${encodeURIComponent(message)}`;
+  // Query harus disisipkan sebelum fragment (#anchor), jika tidak ia ikut terbaca sebagai bagian anchor.
+  const hashIndex = path.indexOf('#');
+  const base = hashIndex >= 0 ? path.slice(0, hashIndex) : path;
+  const hash = hashIndex >= 0 ? path.slice(hashIndex) : '';
+  return `${base}?error=${encodeURIComponent(message)}${hash}`;
 }
 
 /**

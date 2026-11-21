@@ -486,6 +486,18 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             </label>
           </form>
 
+          <form method="post" action={`/api/projects/${project.id}/files/from-url`} class="drive-form can-edit">
+            <input type="hidden" name="anchor" value="#berkas" />
+            <label class="field">
+              <span>Atau ambil dari Google Drive</span>
+              <input type="url" name="url" required placeholder="https://drive.google.com/file/d/…/view" inputmode="url" autocomplete="off" />
+              <span class="hint">Berbagi harus diatur ke "Siapa saja yang memiliki link". Maks. 25 MB.</span>
+            </label>
+            <div class="form-actions">
+              <button class="btn ghost" type="submit" data-busy="Mengambil…">Ambil dari Drive</button>
+            </div>
+          </form>
+
           {
             looseFiles.length === 0 ? (
               <div class="card empty">

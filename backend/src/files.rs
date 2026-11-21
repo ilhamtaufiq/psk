@@ -79,6 +79,46 @@ pub async fn list(
     Ok(Json(rows))
 }
 
+/// Menyimpan berkas ke disk dan mencatatnya di database. Dipakai unggahan langsung
+/// dan unduhan dari URL Google Drive.
+pub async fn store_file(
+    state: &AppState,
+    project_id: &str,
+    requirement_id: Option<String>,
+    user_id: &str,
+    original_name: String,
+    mime_type: String,
+    data: Vec<u8>,
+) -> Result<ProjectFile, AppError> {
+    // Nama di disk memakai UUID, jadi nama asli dari klien tidak pernah dipakai sebagai path.
+    let file_id = Uuid::new_v4().to_string();
+    let dir = state.upload_dir.join(&project_id);
+    tokio::fs::create_dir_all(&dir).await?;
+    tokio::fs::write(dir.join(&file_id), &data).await?;
+
+    sqlx::query(
+        "INSERT INTO project_files (id, project_id, requirement_id, uploaded_by, original_name, mime_type, size_bytes, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(&file_id)
+    .bind(&project_id)
+    .bind(requirement_id.as_deref())
+    .bind(&user_id)
+    .bind(&original_name)
+    .bind(&mime_type)
+    .bind(data.len() as i64)
+    .bind(now_iso())
+    .execute(&state.pool)
+    .await?;
+
+    let sql = format!("{FILE_SELECT} WHERE f.id = ?");
+    let file = sqlx::query_as::<_, ProjectFile>(&sql)
+        .bind(&file_id)
+        .fetch_one(&state.pool)
+        .await?;
+    Ok(file)
+}
+
 pub async fn upload(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
@@ -137,32 +177,16 @@ pub async fn upload(
         }
     }
 
-    // Nama di disk memakai UUID, jadi nama asli dari klien tidak pernah dipakai sebagai path.
-    let file_id = Uuid::new_v4().to_string();
-    let dir = state.upload_dir.join(&project_id);
-    tokio::fs::create_dir_all(&dir).await?;
-    tokio::fs::write(dir.join(&file_id), &data).await?;
-
-    sqlx::query(
-        "INSERT INTO project_files (id, project_id, requirement_id, uploaded_by, original_name, mime_type, size_bytes, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    let file = store_file(
+        &state,
+        &project_id,
+        requirement_id,
+        &user.id,
+        original_name,
+        mime_type,
+        data,
     )
-    .bind(&file_id)
-    .bind(&project_id)
-    .bind(&requirement_id)
-    .bind(&user.id)
-    .bind(&original_name)
-    .bind(&mime_type)
-    .bind(data.len() as i64)
-    .bind(now_iso())
-    .execute(&state.pool)
     .await?;
-
-    let sql = format!("{FILE_SELECT} WHERE f.id = ?");
-    let file = sqlx::query_as::<_, ProjectFile>(&sql)
-        .bind(&file_id)
-        .fetch_one(&state.pool)
-        .await?;
     Ok((StatusCode::CREATED, Json(file)))
 }
 
@@ -184,7 +208,7 @@ const INLINE_SAFE: [&str; 7] = [
 ];
 
 /// Tipe MIME dari nama berkas (lebih andal daripada yang dikirim peramban), jika tidak dikenali pakai bawaan klien.
-fn mime_for(name: &str, client: Option<&str>) -> String {
+pub fn mime_for(name: &str, client: Option<&str>) -> String {
     if let Some(guess) = mime_guess::from_path(name).first() {
         return guess.essence_str().to_string();
     }
@@ -253,7 +277,7 @@ pub async fn delete(
     Ok(StatusCode::NO_CONTENT)
 }
 
-fn sanitize_filename(raw: &str) -> String {
+pub fn sanitize_filename(raw: &str) -> String {
     let base = raw.rsplit(['/', '\\']).next().unwrap_or("").trim();
     let cleaned: String = base.chars().filter(|c| !c.is_control()).take(200).collect();
     if cleaned.is_empty() {
@@ -288,4 +312,42 @@ fn content_disposition(name: &str, inline: bool) -> HeaderValue {
         "{kind}; filename=\"{ascii}\"; filename*=UTF-8''{encoded}"
     ))
     .unwrap_or_else(|_| HeaderValue::from_static("attachment"))
+}
+
+#[derive(Deserialize)]
+pub struct UrlUploadInput {
+    url: String,
+    requirement_id: Option<String>,
+}
+
+/// Mengunggah berkas dari link Google Drive yang dibagikan. Validasi link dilakukan sebelum
+/// server menghubungi Google, supaya input yang salah tidak memicu permintaan jaringan.
+pub async fn upload_from_url(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(project_id): Path<String>,
+    Json(input): Json<UrlUploadInput>,
+) -> Result<(StatusCode, Json<ProjectFile>), AppError> {
+    access::require(&state.pool, &project_id, &user.id, Role::Editor).await?;
+    let file_id = crate::drive::parse_file_id(&input.url)?;
+
+    let requirement_id = input.requirement_id.filter(|r| !r.trim().is_empty());
+    if let Some(rid) = &requirement_id {
+        let (found,): (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM project_requirements WHERE id = ? AND project_id = ?",
+        )
+        .bind(rid)
+        .bind(&project_id)
+        .fetch_one(&state.pool)
+        .await?;
+        if found == 0 {
+            return Err(AppError::BadRequest(
+                "Item daftar berkas tidak valid untuk proyek ini".into(),
+            ));
+        }
+    }
+
+    let (data, name, mime) = crate::drive::download(&file_id).await?;
+    let file = store_file(&state, &project_id, requirement_id, &user.id, name, mime, data).await?;
+    Ok((StatusCode::CREATED, Json(file)))
 }

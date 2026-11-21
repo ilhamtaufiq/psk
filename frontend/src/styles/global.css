@@ -2126,6 +2126,28 @@ a.kpi:hover {
   }
 }
 
+/* ---------- Unggah dari Google Drive ---------- */
+.drive-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.drive-form .form-actions .btn {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .drive-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .drive-form .form-actions .btn {
+    width: auto;
+  }
+}
+
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
   padding: 0;

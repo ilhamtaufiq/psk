@@ -1,6 +1,7 @@
 mod access;
 mod auth;
 mod dashboard;
+mod drive;
 mod error;
 mod fields;
 mod files;
@@ -111,6 +112,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
             "/api/projects",
             get(projects::list).post(projects::create),
+        )
+        .route(
+            "/api/projects/{id}/files/from-url",
+            post(files::upload_from_url),
         )
         .route(
             "/api/projects/{id}/duplicate",
