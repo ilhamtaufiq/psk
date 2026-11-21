@@ -79,6 +79,33 @@ pub async fn list(
     Ok(Json(MemberList { owner, members, my_role: my_role.into() }))
 }
 
+/// Mengirim email pemberitahuan undangan di latar belakang. Kegagalan SMTP tidak membatalkan undangan.
+async fn notify_invite(state: &AppState, project_id: &str, inviter: &str, member: &Member) {
+    let Some(cfg) = state.mail.clone() else {
+        tracing::info!("SMTP belum diatur; undangan tidak dikirim lewat email");
+        return;
+    };
+
+    let project_name: String = sqlx::query_scalar("SELECT name FROM projects WHERE id = ?")
+        .bind(project_id)
+        .fetch_one(&state.pool)
+        .await
+        .unwrap_or_else(|_| "tanpa nama".into());
+    let role = if member.role == "editor" { "editor" } else { "viewer" };
+    let url = format!("{}/projects/{}", state.app_url, project_id);
+    let subject = format!("Anda diundang ke proyek \"{project_name}\"");
+    let body = format!(
+        "Halo {},\n\n{inviter} mengundang Anda ke proyek \"{project_name}\" sebagai {role}.\n\nBuka proyek:\n{url}\n\nSalam,\nProyek Selepas Kerja\n",
+        member.name
+    );
+    let to = member.email.clone();
+    tokio::spawn(async move {
+        if let Err(e) = crate::mail::send(&cfg, &to, &subject, &body).await {
+            tracing::warn!("gagal mengirim email undangan: {e}");
+        }
+    });
+}
+
 /// Pemilik mengundang akun yang sudah terdaftar lewat email. Bila sudah jadi anggota, perannya diperbarui.
 pub async fn add(
     State(state): State<AppState>,
@@ -123,6 +150,7 @@ pub async fn add(
     .bind(&target_id)
     .fetch_one(&state.pool)
     .await?;
+    notify_invite(&state, &project_id, &user.name, &member).await;
     Ok((StatusCode::CREATED, Json(member)))
 }
 

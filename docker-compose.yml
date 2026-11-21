@@ -31,6 +31,15 @@ services:
       - UPLOAD_DIR=/data/uploads
       - BIND_ADDR=0.0.0.0:8080
       - RUST_LOG=info
+      # Alamat publik aplikasi (dipakai untuk tautan di email)
+      - APP_URL=${APP_URL:-https://psk.cianjur.space}
+      # SMTP: atur di Coolify. Kosongkan SMTP_HOST untuk menonaktifkan email.
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_TLS=${SMTP_TLS:-starttls}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
     volumes:
       - psk-data:/data
     healthcheck:

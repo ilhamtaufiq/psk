@@ -2128,7 +2128,6 @@ a.kpi:hover {
 
 /* ---------- Pratinjau berkas ---------- */
 .preview-dialog {
-  margin: 0;
   padding: 0;
   border: 0;
   width: 100%;
@@ -2143,6 +2142,13 @@ a.kpi:hover {
 
 .preview-dialog[open] {
   display: flex;
+}
+
+/* Dialog modal selalu di tengah viewport (sebelumnya margin: 0 menggesernya ke pojok). */
+.preview-dialog:modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
 }
 
 .preview-dialog::backdrop {

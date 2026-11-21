@@ -5,6 +5,7 @@ mod error;
 mod fields;
 mod files;
 mod health;
+mod mail;
 mod members;
 mod projects;
 mod report;
@@ -29,6 +30,10 @@ use tracing_subscriber::EnvFilter;
 pub struct AppState {
     pub pool: SqlitePool,
     pub upload_dir: PathBuf,
+    /// None jika SMTP tidak diatur; email lalu tidak dikirim.
+    pub mail: Option<mail::SmtpConfig>,
+    /// Alamat publik aplikasi, dipakai untuk tautan di email.
+    pub app_url: String,
 }
 
 /// Waktu sekarang dalam format RFC3339 tetap (detik, UTC) agar bisa dibandingkan sebagai string.
@@ -41,6 +46,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // `psk-backend healthcheck` hanya mengetes layanan yang sedang berjalan, lalu keluar.
     if std::env::args().nth(1).as_deref() == Some("healthcheck") {
         std::process::exit(health::run_cli_check());
+    }
+    // `psk-backend send-test-email <alamat>` memeriksa pengaturan SMTP dari environment.
+    if std::env::args().nth(1).as_deref() == Some("send-test-email") {
+        let to = std::env::args().nth(2);
+        std::process::exit(mail::cli_send_test(to.as_deref()).await);
     }
 
     tracing_subscriber::fmt()
@@ -67,7 +77,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = SqlitePool::connect_with(base.foreign_keys(true)).await?;
     tokio::fs::create_dir_all(&upload_dir).await?;
 
-    let state = AppState { pool, upload_dir };
+    let mail = match mail::from_env() {
+        Ok(cfg) => {
+            if cfg.is_none() {
+                tracing::info!("SMTP_HOST kosong: email dinonaktifkan");
+            }
+            cfg
+        }
+        Err(e) => {
+            tracing::warn!("konfigurasi SMTP tidak valid, email dinonaktifkan: {e}");
+            None
+        }
+    };
+    let app_url = std::env::var("APP_URL")
+        .ok()
+        .map(|v| v.trim().trim_end_matches('/').to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| "http://localhost:4321".into());
+
+    let state = AppState { pool, upload_dir, mail, app_url };
 
     let app = Router::new()
         .route("/api/health", get(health::check))

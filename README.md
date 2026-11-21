@@ -110,6 +110,30 @@ Catatan:
 - Backup: salin volume `psk-data` secara berkala (berisi `app.db` dan folder `uploads/`).
 - Untuk skala lebih besar, SQLite bisa diganti PostgreSQL; kode sqlx perlu disesuaikan.
 
+## Email (SMTP)
+
+Email dikirim lewat SMTP. Semua pengaturan diisi sebagai environment variable di Coolify (service **backend**). Jika `SMTP_HOST` kosong, email dinonaktifkan dan aplikasi tetap berjalan.
+
+| Variabel | Contoh | Keterangan |
+| --- | --- | --- |
+| `SMTP_HOST` | `smtp.gmail.com` | Host server SMTP. Kosongkan untuk mematikan email. |
+| `SMTP_PORT` | `587` | Default 587 (STARTTLS) atau 465 (TLS). |
+| `SMTP_TLS` | `starttls` | `starttls`, `tls` (SMTPS), atau `none` (hanya untuk server lokal). |
+| `SMTP_USERNAME` | `user@contoh.com` | Kosongkan jika server tidak memerlukan login. |
+| `SMTP_PASSWORD` | | Simpan sebagai secret di Coolify. Jangan ditulis di kode. |
+| `SMTP_FROM` | `Proyek Selepas Kerja <noreply@contoh.com>` | Wajib jika `SMTP_HOST` diisi. |
+| `APP_URL` | `https://psk.cianjur.space` | Dipakai untuk tautan di email. |
+
+Email yang dikirim saat ini: pemberitahuan undangan ke proyek.
+
+Uji konfigurasi dari terminal container backend di Coolify:
+
+```bash
+psk-backend send-test-email alamat-anda@contoh.com
+```
+
+Perintah ini mengirim email uji dan menampilkan hasilnya (berhasil atau pesan galat).
+
 ## Healthcheck
 
 | Endpoint / perintah | Fungsi |
