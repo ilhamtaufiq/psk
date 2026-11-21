@@ -151,6 +151,7 @@ pub async fn add(
     .fetch_one(&state.pool)
     .await?;
     notify_invite(&state, &project_id, &user.name, &member).await;
+    crate::events::publish(&state, &project_id, "members");
     Ok((StatusCode::CREATED, Json(member)))
 }
 
@@ -182,6 +183,7 @@ pub async fn update_role(
     .bind(&member_id)
     .fetch_one(&state.pool)
     .await?;
+    crate::events::publish(&state, &project_id, "members");
     Ok(Json(member))
 }
 
@@ -208,5 +210,6 @@ pub async fn remove(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Anggota tidak ditemukan".into()));
     }
+    crate::events::publish(&state, &project_id, "members");
     Ok(StatusCode::NO_CONTENT)
 }

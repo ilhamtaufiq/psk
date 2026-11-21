@@ -187,6 +187,7 @@ pub async fn upload(
         data,
     )
     .await?;
+    crate::events::publish(&state, &project_id, "files");
     Ok((StatusCode::CREATED, Json(file)))
 }
 
@@ -274,6 +275,7 @@ pub async fn delete(
         .execute(&state.pool)
         .await?;
     let _ = tokio::fs::remove_file(state.upload_dir.join(&file.project_id).join(&file.id)).await;
+    crate::events::publish(&state, &file.project_id, "files");
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -349,5 +351,6 @@ pub async fn upload_from_url(
 
     let (data, name, mime) = crate::drive::download(&file_id).await?;
     let file = store_file(&state, &project_id, requirement_id, &user.id, name, mime, data).await?;
+    crate::events::publish(&state, &project_id, "files");
     Ok((StatusCode::CREATED, Json(file)))
 }

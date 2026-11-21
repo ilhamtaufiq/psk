@@ -181,6 +181,7 @@ pub async fn create(
         .bind(&id)
         .fetch_one(&state.pool)
         .await?;
+    crate::events::publish(&state, &project_id, "fields");
     Ok((StatusCode::CREATED, Json(created)))
 }
 
@@ -202,7 +203,9 @@ pub async fn update(
         .execute(&state.pool)
         .await?;
 
-    Ok(Json(find_owned_field(&state.pool, &id, &user.id, Role::Viewer).await?))
+    let updated = find_owned_field(&state.pool, &id, &user.id, Role::Viewer).await?;
+    crate::events::publish(&state, &updated.project_id, "fields");
+    Ok(Json(updated))
 }
 
 pub async fn delete(
@@ -210,11 +213,12 @@ pub async fn delete(
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AppError> {
-    find_owned_field(&state.pool, &id, &user.id, Role::Editor).await?;
+    let removed = find_owned_field(&state.pool, &id, &user.id, Role::Editor).await?;
     sqlx::query("DELETE FROM project_fields WHERE id = ?")
         .bind(&id)
         .execute(&state.pool)
         .await?;
+    crate::events::publish(&state, &removed.project_id, "fields");
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -254,5 +258,6 @@ pub async fn move_field(
             .await?;
         tx.commit().await?;
     }
+    crate::events::publish(&state, &field.project_id, "fields");
     Ok(StatusCode::NO_CONTENT)
 }

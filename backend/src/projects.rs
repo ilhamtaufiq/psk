@@ -274,6 +274,7 @@ pub async fn update(
     .execute(&state.pool)
     .await?;
 
+    crate::events::publish(&state, &id, "project");
     Ok(Json(fetch_project(&state.pool, &id, &user.id).await?))
 }
 
@@ -294,6 +295,7 @@ pub async fn delete(
 
     // Berkas di disk ikut dihapus; baris berkas sudah terhapus lewat ON DELETE CASCADE.
     let _ = tokio::fs::remove_dir_all(state.upload_dir.join(&id)).await;
+    crate::events::publish(&state, &id, "project");
     Ok(StatusCode::NO_CONTENT)
 }
 

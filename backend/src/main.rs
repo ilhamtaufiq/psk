@@ -1,6 +1,7 @@
 mod access;
 mod auth;
 mod dashboard;
+mod events;
 mod drive;
 mod error;
 mod fields;
@@ -35,6 +36,8 @@ pub struct AppState {
     pub mail: Option<mail::SmtpConfig>,
     /// Alamat publik aplikasi, dipakai untuk tautan di email.
     pub app_url: String,
+    /// Saluran perubahan data proyek untuk Server-Sent Events.
+    pub events: tokio::sync::broadcast::Sender<events::ChangeEvent>,
 }
 
 /// Waktu sekarang dalam format RFC3339 tetap (detik, UTC) agar bisa dibandingkan sebagai string.
@@ -96,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter(|v| !v.is_empty())
         .unwrap_or_else(|| "http://localhost:4321".into());
 
-    let state = AppState { pool, upload_dir, mail, app_url };
+    let state = AppState { pool, upload_dir, mail, app_url, events: events::channel() };
 
     let app = Router::new()
         .route("/api/health", get(health::check))
@@ -113,6 +116,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/projects",
             get(projects::list).post(projects::create),
         )
+        .route("/api/projects/{id}/events", get(events::stream_project))
         .route(
             "/api/projects/{id}/files/from-url",
             post(files::upload_from_url),

@@ -112,6 +112,7 @@ pub async fn create(
     .await?;
 
     let created = find_owned_requirement(&state.pool, &id, &user.id, Role::Viewer).await?;
+    crate::events::publish(&state, &project_id, "requirements");
     Ok((StatusCode::CREATED, Json(created)))
 }
 
@@ -131,7 +132,9 @@ pub async fn update(
         .execute(&state.pool)
         .await?;
 
-    Ok(Json(find_owned_requirement(&state.pool, &id, &user.id, Role::Viewer).await?))
+    let updated = find_owned_requirement(&state.pool, &id, &user.id, Role::Viewer).await?;
+    crate::events::publish(&state, &updated.project_id, "requirements");
+    Ok(Json(updated))
 }
 
 /// Menghapus item daftar. Berkas yang sudah terunggah tetap ada (kaitannya di-NULL-kan).
@@ -140,10 +143,11 @@ pub async fn delete(
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AppError> {
-    find_owned_requirement(&state.pool, &id, &user.id, Role::Editor).await?;
+    let removed = find_owned_requirement(&state.pool, &id, &user.id, Role::Editor).await?;
     sqlx::query("DELETE FROM project_requirements WHERE id = ?")
         .bind(&id)
         .execute(&state.pool)
         .await?;
+    crate::events::publish(&state, &removed.project_id, "requirements");
     Ok(StatusCode::NO_CONTENT)
 }

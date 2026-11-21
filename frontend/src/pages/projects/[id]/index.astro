@@ -63,7 +63,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
 ---
 
 <Layout title={project ? project.name : 'Tidak ditemukan'}>
-  <div class={`detail ${role}`}>
+  <div class={`detail ${role}`} data-live-project={project?.id}>
   {
     !project ? (
       <div class="card empty">
@@ -560,10 +560,12 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
     )
   }
 
-  <FilePreview />
   </div>
+
+  <FilePreview />
 </Layout>
 
 <script>
   import '../../../scripts/preview';
+  import '../../../scripts/live';
 </script>
