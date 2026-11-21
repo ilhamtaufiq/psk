@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import ProjectForm from '../../components/ProjectForm.astro';
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout title="Proyek baru">
+  <a href="/projects" class="back"><Icon name="arrow-left" />Semua proyek</a>
+
+  <section class="page-head" style="margin-top:8px">
+    <div>
+      <p class="eyebrow">Proyek baru</p>
+      <h1>Mulai proyek baru</h1>
+      <p class="muted small" style="margin-top:4px">Isi informasi dasar. Anda bisa mengubahnya kapan saja.</p>
+    </div>
+  </section>
+
+  {error && <div class="alert error" role="alert">{error}</div>}
+
+  <ProjectForm
+    action="/api/projects"
+    submitLabel="Simpan proyek"
+    busyLabel="Menyimpan…"
+    cancelHref="/projects"
+  />
+</Layout>

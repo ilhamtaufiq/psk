@@ -1,0 +1,52 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Icon from '../../../components/Icon.astro';
+import ProjectForm from '../../../components/ProjectForm.astro';
+import { api, ApiError, type Project } from '../../../lib/api';
+
+const token = Astro.locals.token as string;
+const { id } = Astro.params;
+const error = Astro.url.searchParams.get('error');
+
+let project: Project | null = null;
+try {
+  project = await api<Project>(`/api/projects/${id}`, { token });
+} catch (err) {
+  if (!(err instanceof ApiError && err.status === 404)) throw err;
+  Astro.response.status = 404;
+}
+---
+
+<Layout title={project ? `Ubah ${project.name}` : 'Tidak ditemukan'}>
+  {
+    !project ? (
+      <div class="card empty">
+        <span class="empty-ico"><Icon name="folder" /></span>
+        <h2>Proyek tidak ditemukan</h2>
+        <p>Proyek mungkin sudah dihapus atau bukan milik Anda.</p>
+        <a href="/projects" class="btn ghost">Kembali ke daftar</a>
+      </div>
+    ) : (
+      <>
+        <a href={`/projects/${project.id}`} class="back"><Icon name="arrow-left" />Kembali ke proyek</a>
+
+        <section class="page-head" style="margin-top:8px">
+          <div>
+            <p class="eyebrow">Ubah proyek</p>
+            <h1>{project.name}</h1>
+          </div>
+        </section>
+
+        {error && <div class="alert error" role="alert">{error}</div>}
+
+        <ProjectForm
+          action={`/api/projects/${project.id}/update`}
+          project={project}
+          submitLabel="Simpan perubahan"
+          busyLabel="Menyimpan…"
+          cancelHref={`/projects/${project.id}`}
+        />
+      </>
+    )
+  }
+</Layout>

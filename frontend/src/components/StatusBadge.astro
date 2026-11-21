@@ -1,0 +1,11 @@
+---
+import { STATUS_LABELS, type ProjectStatus } from '../lib/api';
+
+interface Props {
+  status: ProjectStatus;
+}
+
+const { status } = Astro.props;
+---
+
+<span class={`badge ${status}`}>{STATUS_LABELS[status]}</span>

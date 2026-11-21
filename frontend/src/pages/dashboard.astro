@@ -1,0 +1,202 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import StatusBadge from '../components/StatusBadge.astro';
+import {
+  api,
+  PROJECT_TYPE_LABELS,
+  STATUS_LABELS,
+  type DashboardData,
+  type ProjectStatus,
+  type ProjectType,
+} from '../lib/api';
+import { deadlineOf, formatBytes, formatDate } from '../lib/format';
+
+const token = Astro.locals.token as string;
+const user = Astro.locals.user!;
+const data = await api<DashboardData>('/api/dashboard', { token });
+
+const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
+const countOf = (buckets: { key: string; count: number }[], key: string) =>
+  buckets.find((b) => b.key === key)?.count ?? 0;
+
+const statusTotal = data.by_status.reduce((sum, b) => sum + b.count, 0);
+const typeMax = Math.max(1, ...data.by_type.map((b) => b.count));
+const monthMax = Math.max(1, ...data.uploads_by_month.map((b) => b.count));
+const uploadsTotal = data.uploads_by_month.reduce((sum, b) => sum + b.count, 0);
+const active = countOf(data.by_status, 'active');
+const dueThisWeek = data.due_soon.filter((d) => d.due_date >= data.today && d.status !== 'completed').length;
+const completion = pct(data.requirements_done, data.requirements_total);
+const firstName = user.name.trim().split(/\s+/)[0];
+
+const monthLabel = (key: string) =>
+  new Date(`${key}-01T00:00:00Z`).toLocaleDateString('id-ID', { month: 'short', timeZone: 'UTC' });
+const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).format(new Date()));
+const greeting = hour < 11 ? 'Selamat pagi' : hour < 15 ? 'Selamat siang' : hour < 18 ? 'Selamat sore' : 'Selamat malam';
+const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
+---
+
+<Layout title="Dashboard">
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">{formatDate(data.today)}</p>
+      <h1>{greeting}, {firstName}</h1>
+      <p class="muted small" style="margin-top:4px">
+        {data.total_projects === 0
+          ? 'Belum ada proyek. Mulai dengan membuat proyek pertama Anda.'
+          : `Ringkasan dari ${data.total_projects} proyek Anda.`}
+      </p>
+    </div>
+    <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Proyek baru</a>
+  </section>
+
+  <section class="kpis" aria-label="Ringkasan angka">
+    <a href="/projects" class="card kpi">
+      <span class="kpi-label">Total proyek</span>
+      <span class="kpi-value">{data.total_projects}</span>
+      <span class="kpi-sub">{active} sedang berjalan</span>
+    </a>
+    <a href="/projects?sort=due" class={`card kpi${data.overdue > 0 ? ' kpi-alert' : ''}`}>
+      <span class="kpi-label">Terlambat</span>
+      <span class="kpi-value">{data.overdue}</span>
+      <span class="kpi-sub">{data.overdue > 0 ? 'Perlu perhatian segera' : 'Tidak ada yang terlambat'}</span>
+    </a>
+    <a href="/projects?sort=due" class="card kpi">
+      <span class="kpi-label">Tenggat 7 hari</span>
+      <span class="kpi-value">{dueThisWeek}</span>
+      <span class="kpi-sub">proyek jatuh tempo</span>
+    </a>
+    <div class="card kpi">
+      <span class="kpi-label">Kelengkapan</span>
+      <span class="kpi-value">{completion}%</span>
+      <span class="kpi-sub">{data.requirements_done} dari {data.requirements_total} item</span>
+    </div>
+    <div class="card kpi kpi-wide">
+      <span class="kpi-label">Berkas tersimpan</span>
+      <span class="kpi-value">{data.total_files}</span>
+      <span class="kpi-sub">{formatBytes(data.total_bytes)} digunakan</span>
+    </div>
+  </section>
+
+  <div class="dash-grid">
+    <section class="card dash-card" aria-labelledby="h-status">
+      <h2 id="h-status">Status proyek</h2>
+      {
+        statusTotal === 0 ? (
+          <p class="muted small">Belum ada data.</p>
+        ) : (
+          <>
+            <div class="stack-bar" role="img" aria-label="Distribusi status proyek">
+              {statusKeys.map((s) => {
+                const n = countOf(data.by_status, s);
+                return n > 0 ? <span class={`seg seg-${s}`} style={`flex:${n}`} /> : null;
+              })}
+            </div>
+            <ul class="legend">
+              {statusKeys.map((s) => {
+                const n = countOf(data.by_status, s);
+                return (
+                  <li>
+                    <span class={`dot seg-${s}`} aria-hidden="true" />
+                    <span class="legend-label">{STATUS_LABELS[s]}</span>
+                    <span class="legend-value">{n} <span class="muted">· {pct(n, statusTotal)}%</span></span>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )
+      }
+    </section>
+
+    <section class="card dash-card" aria-labelledby="h-type">
+      <h2 id="h-type">Jenis proyek</h2>
+      <ul class="hbars">
+        {
+          data.by_type
+            .filter((b) => b.count > 0)
+            .sort((a, b) => b.count - a.count)
+            .map((b) => (
+              <li>
+                <div class="hbar-head">
+                  <span>{PROJECT_TYPE_LABELS[b.key as ProjectType]}</span>
+                  <span class="muted">{b.count}</span>
+                </div>
+                <div class="hbar-track">
+                  <span style={`width:${(b.count / typeMax) * 100}%`} />
+                </div>
+              </li>
+            ))
+        }
+      </ul>
+      {data.by_type.every((b) => b.count === 0) && <p class="muted small">Belum ada data.</p>}
+    </section>
+
+    <section class="card dash-card" aria-labelledby="h-uploads">
+      <div class="dash-head">
+        <h2 id="h-uploads">Unggahan 6 bulan terakhir</h2>
+        <span class="muted small">{uploadsTotal} berkas</span>
+      </div>
+      <div class="columns" role="img" aria-label={`Berkas diunggah per bulan: ${data.uploads_by_month.map((b) => `${monthLabel(b.key)} ${b.count}`).join(', ')}`}>
+        {
+          data.uploads_by_month.map((b) => (
+            <div class="col">
+              <span class="col-value">{b.count > 0 ? b.count : ''}</span>
+              <span class="col-bar" style={`height:${Math.max(b.count > 0 ? 6 : 2, (b.count / monthMax) * 100)}%`} />
+              <span class="col-label">{monthLabel(b.key)}</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="card dash-card" aria-labelledby="h-due">
+      <h2 id="h-due">Tenggat terdekat</h2>
+      {
+        data.due_soon.length === 0 ? (
+          <p class="muted small">Tidak ada tenggat dalam 7 hari ke depan.</p>
+        ) : (
+          <ul class="mini-list">
+            {data.due_soon.map((p) => {
+              const d = deadlineOf(p.due_date, p.status);
+              return (
+                <li>
+                  <a href={`/projects/${p.id}`} class="mini-link">
+                    <span class="mini-title">{p.name}</span>
+                    {d && <span class={`deadline ${d.tone}`}>{d.text}</span>}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        )
+      }
+    </section>
+
+    <section class="card dash-card dash-wide" aria-labelledby="h-recent">
+      <div class="dash-head">
+        <h2 id="h-recent">Aktivitas terbaru</h2>
+        <a href="/projects" class="small">Semua proyek</a>
+      </div>
+      {
+        data.recent.length === 0 ? (
+          <p class="muted small">Belum ada aktivitas.</p>
+        ) : (
+          <ul class="mini-list">
+            {data.recent.map((p) => (
+              <li>
+                <a href={`/projects/${p.id}`} class="mini-link">
+                  <span class="mini-title">{p.name}</span>
+                  <span class="mini-meta">
+                    <StatusBadge status={p.status} />
+                    <span class="muted small">{formatDate(p.updated_at, true)}</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+</Layout>

@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout title="Daftar">
+  <section class="auth">
+    <div class="auth-hero">
+      <img class="auth-logo" src="/logo.svg" width="56" height="56" alt="Proyek Selepas Kerja" />
+      <div>
+        <h1>Buat akun baru</h1>
+        <p class="sub">Mulai catat proyek dan simpan berkas kerja Anda.</p>
+      </div>
+    </div>
+
+    <div class="card auth-card">
+      {error && <div class="alert error" role="alert">{error}</div>}
+      <form method="post" action="/api/register" class="form">
+        <label class="field">
+          <span>Nama</span>
+          <input type="text" name="name" required maxlength="100" autocomplete="name" autofocus />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" required autocomplete="email" inputmode="email" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+          <span class="hint">Minimal 8 karakter.</span>
+        </label>
+        <div class="form-actions">
+          <button class="btn primary" type="submit" data-busy="Membuat akun…">Daftar</button>
+        </div>
+      </form>
+    </div>
+
+    <p class="auth-foot">Sudah punya akun? <a href="/login">Masuk</a></p>
+  </section>
+</Layout>

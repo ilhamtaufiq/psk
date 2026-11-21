@@ -1,0 +1,32 @@
+# Dipakai di Coolify (Docker Compose).
+#
+# Hanya service `frontend` yang diberi domain publik (psk.cjr.my.id, port 4321).
+# Service `backend` TIDAK dipublikasikan; frontend memanggilnya lewat jaringan internal
+# Docker di http://backend:8080. Dengan begitu tidak perlu CORS dan cookie sesi tetap httpOnly.
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - API_URL=http://backend:8080
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=sqlite:///data/app.db
+      - UPLOAD_DIR=/data/uploads
+      - BIND_ADDR=0.0.0.0:8080
+      - RUST_LOG=info
+    volumes:
+      - psk-data:/data
+    restart: unless-stopped
+
+volumes:
+  psk-data:

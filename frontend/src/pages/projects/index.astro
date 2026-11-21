@@ -1,0 +1,166 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
+import {
+  api,
+  PROJECT_SORTS,
+  PROJECT_TYPE_LABELS,
+  STATUS_LABELS,
+  type Project,
+  type ProjectStatus,
+  type ProjectType,
+} from '../../lib/api';
+import { deadlineOf, formatDate, timeProgress } from '../../lib/format';
+
+const token = Astro.locals.token as string;
+const params = Astro.url.searchParams;
+const error = params.get('error');
+
+const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
+const typeKeys = Object.keys(PROJECT_TYPE_LABELS) as ProjectType[];
+const sortKeys = Object.keys(PROJECT_SORTS);
+
+const status = statusKeys.includes(params.get('status') as ProjectStatus) ? (params.get('status') as ProjectStatus) : null;
+const type = typeKeys.includes(params.get('type') as ProjectType) ? (params.get('type') as ProjectType) : null;
+const sort = sortKeys.includes(params.get('sort') ?? '') ? (params.get('sort') as string) : 'updated';
+
+// Gabungkan filter/urutan ke URL. Parameter kosong dibuang agar URL tetap bersih.
+function listUrl(next: { status?: string | null; type?: string | null; sort?: string | null }) {
+  const q = new URLSearchParams();
+  const s = next.status === undefined ? status : next.status;
+  const t = next.type === undefined ? type : next.type;
+  const o = next.sort === undefined ? sort : next.sort;
+  if (s) q.set('status', s);
+  if (t) q.set('type', t);
+  if (o && o !== 'updated') q.set('sort', o);
+  const qs = q.toString();
+  return qs ? `/projects?${qs}` : '/projects';
+}
+
+const qs = new URLSearchParams();
+if (status) qs.set('status', status);
+if (type) qs.set('type', type);
+qs.set('sort', sort);
+const projects = await api<Project[]>(`/api/projects?${qs.toString()}`, { token });
+
+const filterLabel = [status ? STATUS_LABELS[status] : null, type ? PROJECT_TYPE_LABELS[type] : null]
+  .filter(Boolean)
+  .join(' · ');
+---
+
+<Layout title="Proyek">
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Daftar proyek</p>
+      <h1>{filterLabel || 'Semua proyek'}</h1>
+      <p class="muted small" style="margin-top:4px">
+        {projects.length} proyek · diurutkan: {PROJECT_SORTS[sort].toLowerCase()}
+      </p>
+    </div>
+    <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Proyek baru</a>
+  </section>
+
+  {error && <div class="alert error" role="alert">{error}</div>}
+
+  <nav class="tabs" aria-label="Filter status">
+    <a href={listUrl({ status: null })} class="tab" aria-current={status === null ? 'page' : undefined}>Semua</a>
+    {
+      statusKeys.map((s) => (
+        <a href={listUrl({ status: s })} class="tab" aria-current={status === s ? 'page' : undefined}>
+          {STATUS_LABELS[s]}
+        </a>
+      ))
+    }
+  </nav>
+
+  <form method="get" action="/projects" class="toolbar" aria-label="Urutkan dan filter jenis">
+    {status && <input type="hidden" name="status" value={status} />}
+    <label class="select-field">
+      <span class="sr-only">Jenis proyek</span>
+      <Icon name="tag" />
+      <select name="type" data-autosubmit>
+        <option value="">Semua jenis</option>
+        {
+          typeKeys.map((t) => (
+            <option value={t} selected={t === type}>{PROJECT_TYPE_LABELS[t]}</option>
+          ))
+        }
+      </select>
+    </label>
+    <label class="select-field">
+      <span class="sr-only">Urutkan</span>
+      <Icon name="sort" />
+      <select name="sort" data-autosubmit>
+        {
+          sortKeys.map((k) => (
+            <option value={k} selected={k === sort}>{PROJECT_SORTS[k]}</option>
+          ))
+        }
+      </select>
+    </label>
+    <noscript><button class="btn ghost small" type="submit">Terapkan</button></noscript>
+  </form>
+
+  {
+    projects.length === 0 ? (
+      <div class="card empty">
+        <span class="empty-ico"><Icon name="folder" /></span>
+        <h2>{filterLabel ? 'Tidak ada proyek yang cocok' : 'Belum ada proyek'}</h2>
+        <p>
+          {filterLabel
+            ? 'Coba ubah filter jenis atau status, atau buat proyek baru.'
+            : 'Buat proyek pertama Anda untuk mulai mencatat progres dan menyimpan berkas kerja.'}
+        </p>
+        <a href="/projects/new" class="btn primary"><Icon name="plus" />Buat proyek</a>
+      </div>
+    ) : (
+      <ul class="grid">
+        {projects.map((p) => {
+          const deadline = deadlineOf(p.due_date, p.status);
+          const progress = timeProgress(p.start_date, p.due_date, p.status);
+          return (
+            <li>
+              <a href={`/projects/${p.id}`} class="card project-card">
+                <div class="card-top">
+                  <div class="badges">
+                    <StatusBadge status={p.status} />
+                    <span class="type-pill">{PROJECT_TYPE_LABELS[p.project_type]}</span>
+                  </div>
+                  <span class="count" title="Jumlah berkas">
+                    <Icon name="paperclip" />
+                    {p.file_count}
+                  </span>
+                </div>
+                <h2>{p.name}</h2>
+                <p class="clamp">{p.description || 'Belum ada deskripsi'}</p>
+                {progress !== null && (
+                  <div
+                    class="progress"
+                    role="progressbar"
+                    aria-label="Progres waktu"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={progress}
+                  >
+                    <span style={`width:${progress}%`} />
+                  </div>
+                )}
+                {p.req_total > 0 && (
+                  <div class="req-summary" title="Kelengkapan berkas">
+                    <Icon name="check" />
+                    <span>Kelengkapan {p.req_done}/{p.req_total}</span>
+                  </div>
+                )}
+                <div class="card-foot">
+                  {deadline ? <span class={`deadline ${deadline.tone}`}>{deadline.text}</span> : <span>Tanpa tenggat</span>}
+                  <span>{formatDate(p.start_date)} – {formatDate(p.due_date)}</span>
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</Layout>

@@ -1,0 +1,37 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout title="Masuk">
+  <section class="auth">
+    <div class="auth-hero">
+      <img class="auth-logo" src="/logo.svg" width="56" height="56" alt="Proyek Selepas Kerja" />
+      <div>
+        <h1>Selamat datang kembali</h1>
+        <p class="sub">Masuk untuk melanjutkan proyek dan berkas Anda.</p>
+      </div>
+    </div>
+
+    <div class="card auth-card">
+      {error && <div class="alert error" role="alert">{error}</div>}
+      <form method="post" action="/api/login" class="form">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" required autocomplete="email" inputmode="email" autofocus />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="password" required autocomplete="current-password" />
+        </label>
+        <div class="form-actions">
+          <button class="btn primary" type="submit" data-busy="Memproses…">Masuk</button>
+        </div>
+      </form>
+    </div>
+
+    <p class="auth-foot">Belum punya akun? <a href="/register">Daftar sekarang</a></p>
+  </section>
+</Layout>

@@ -1,0 +1,143 @@
+---
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const user = Astro.locals.user;
+const path = Astro.url.pathname;
+const isDash = path === '/dashboard';
+const isList = path === '/projects' || (path.startsWith('/projects/') && !path.startsWith('/projects/new'));
+const isNew = path.startsWith('/projects/new');
+const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f5fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0f16" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>{title} · Proyek Selepas Kerja</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container bar">
+        <a href={user ? '/projects' : '/login'} class="brand">
+          <img class="brand-logo" src="/logo.svg" width="30" height="30" alt="" />
+          <span>Proyek Selepas Kerja</span>
+        </a>
+
+        {
+          user && (
+            <>
+              <nav class="nav-links" aria-label="Utama">
+                <a href="/dashboard" aria-current={isDash ? 'page' : undefined}>Dashboard</a>
+                <a href="/projects" aria-current={isList ? 'page' : undefined}>Proyek</a>
+                <a href="/projects/new" class="btn primary small" aria-current={isNew ? 'page' : undefined}>
+                  <Icon name="plus" />
+                  Proyek baru
+                </a>
+                <span class="user" title={user.email}>{user.name}</span>
+                <form method="post" action="/api/logout">
+                  <button class="btn ghost small" type="submit" data-busy="Keluar…">Keluar</button>
+                </form>
+              </nav>
+              <span class="avatar" aria-label={`Masuk sebagai ${user.name}`}>{initial}</span>
+            </>
+          )
+        }
+      </div>
+    </header>
+
+    <main class="container">
+      <slot />
+    </main>
+
+    {
+      user && (
+        <nav class="bottom-nav" aria-label="Navigasi utama">
+          <a href="/dashboard" aria-current={isDash ? 'page' : undefined}>
+            <Icon name="home" />
+            <span>Beranda</span>
+          </a>
+          <a href="/projects" aria-current={isList ? 'page' : undefined}>
+            <Icon name="list" />
+            <span>Proyek</span>
+          </a>
+          <a href="/projects/new" aria-current={isNew ? 'page' : undefined}>
+            <span class="fab"><Icon name="plus" /></span>
+            <span>Baru</span>
+          </a>
+          <form method="post" action="/api/logout">
+            <button type="submit" data-busy="Keluar…">
+              <Icon name="logout" />
+              <span>Keluar</span>
+            </button>
+          </form>
+        </nav>
+      )
+    }
+
+    <script>
+      // Tombol bertanda data-busy langsung menampilkan status saat formulir dikirim.
+      document.addEventListener('submit', (event) => {
+        if (event.defaultPrevented) return; // dibatalkan, mis. konfirmasi hapus ditolak
+        const form = event.target as HTMLFormElement;
+        const button = form.querySelector<HTMLButtonElement>('button[type="submit"][data-busy]');
+        if (!button) return;
+        button.disabled = true;
+        button.dataset.label = button.textContent?.trim() ?? '';
+        button.textContent = button.dataset.busy ?? 'Memproses…';
+      });
+
+      // Pilih berkas → langsung diunggah (input bertanda data-autoupload).
+      document.addEventListener('change', (event) => {
+        const input = event.target as HTMLInputElement;
+        if (!input.matches('input[data-autoupload]') || !input.files?.length) return;
+        const title = input.closest('label')?.querySelector('.dz-title');
+        if (title) title.textContent = 'Mengunggah…';
+        input.form?.requestSubmit();
+      });
+
+      // Dropdown urutan/jenis langsung mengirim formulir GET saat dipilih.
+      document.addEventListener('change', (event) => {
+        const select = event.target as HTMLSelectElement;
+        if (!select.matches('select[data-autosubmit]') || !select.form) return;
+        // Field kosong dinonaktifkan agar URL tidak berisi parameter kosong (mis. ?type=).
+        select.form.querySelectorAll<HTMLSelectElement>('select').forEach((el) => {
+          el.disabled = el.value === '';
+        });
+        select.form.requestSubmit();
+      });
+
+      // Saran cepat nama berkas: klik untuk mengisi kolom "Tambah" di sebelahnya.
+      document.addEventListener('click', (event) => {
+        const chip = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-fill]');
+        if (!chip) return;
+        const input = chip.closest('.checklist')?.querySelector<HTMLInputElement>('input[name="title"]');
+        if (!input) return;
+        input.value = chip.dataset.fill ?? '';
+        input.focus();
+      });
+
+      // Saat kembali lewat riwayat (bfcache), pulihkan tombol yang masih nonaktif.
+      window.addEventListener('pageshow', () => {
+        document.querySelectorAll<HTMLButtonElement>('button[data-busy][disabled]').forEach((b) => {
+          b.disabled = false;
+          if (b.dataset.label) b.textContent = b.dataset.label;
+        });
+      });
+    </script>
+  </body>
+</html>

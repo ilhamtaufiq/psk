@@ -1,0 +1,352 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Icon from '../../../components/Icon.astro';
+import StatusBadge from '../../../components/StatusBadge.astro';
+import {
+  api,
+  ApiError,
+  type Project,
+  type ProjectFile,
+  type Requirement,
+} from '../../../lib/api';
+import { deadlineOf, fileKind, formatBytes, formatDate, timeProgress } from '../../../lib/format';
+import { previewKind } from '../../../lib/preview';
+import { PROJECT_TYPE_LABELS } from '../../../lib/api';
+import FilePreview from '../../../components/FilePreview.astro';
+
+const token = Astro.locals.token as string;
+const { id } = Astro.params;
+const error = Astro.url.searchParams.get('error');
+
+let project: Project | null = null;
+let files: ProjectFile[] = [];
+let requirements: Requirement[] = [];
+
+try {
+  [project, files, requirements] = await Promise.all([
+    api<Project>(`/api/projects/${id}`, { token }),
+    api<ProjectFile[]>(`/api/projects/${id}/files`, { token }),
+    api<Requirement[]>(`/api/projects/${id}/requirements`, { token }),
+  ]);
+} catch (err) {
+  if (!(err instanceof ApiError && err.status === 404)) throw err;
+  Astro.response.status = 404;
+}
+
+const deadline = project ? deadlineOf(project.due_date, project.status) : null;
+const progress = project ? timeProgress(project.start_date, project.due_date, project.status) : null;
+
+// Berkas dikelompokkan per item kelengkapan; sisanya tampil di "Berkas lainnya".
+const filesByReq = new Map<string, ProjectFile[]>();
+for (const f of files) {
+  if (!f.requirement_id) continue;
+  const list = filesByReq.get(f.requirement_id) ?? [];
+  list.push(f);
+  filesByReq.set(f.requirement_id, list);
+}
+const looseFiles = files.filter((f) => !f.requirement_id);
+const doneCount = requirements.filter((r) => r.file_count > 0).length;
+const checklistPercent = requirements.length ? Math.round((doneCount / requirements.length) * 100) : 0;
+const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Foto dokumentasi'];
+---
+
+<Layout title={project ? project.name : 'Tidak ditemukan'}>
+  {
+    !project ? (
+      <div class="card empty">
+        <span class="empty-ico"><Icon name="folder" /></span>
+        <h2>Proyek tidak ditemukan</h2>
+        <p>Proyek mungkin sudah dihapus atau bukan milik Anda.</p>
+        <a href="/projects" class="btn ghost">Kembali ke daftar proyek</a>
+      </div>
+    ) : (
+      <>
+        <a href="/projects" class="back"><Icon name="arrow-left" />Semua proyek</a>
+
+        {error && <div class="alert error" role="alert" style="margin-top:12px">{error}</div>}
+
+        <section class="card hero" style="margin-top:12px">
+          <div class="hero-top">
+            <StatusBadge status={project.status} />
+            <span class="type-pill">{PROJECT_TYPE_LABELS[project.project_type]}</span>
+            {deadline && <span class={`deadline ${deadline.tone}`}>{deadline.text}</span>}
+          </div>
+
+          <h1>{project.name}</h1>
+
+          {
+            progress !== null && (
+              <div class="progress-block">
+                <div class="progress-meta">
+                  <span>Progres waktu</span>
+                  <span>{progress}%</span>
+                </div>
+                <div
+                  class="progress"
+                  role="progressbar"
+                  aria-label="Progres waktu"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progress}
+                >
+                  <span style={`width:${progress}%`} />
+                </div>
+              </div>
+            )
+          }
+
+          <div class="action-row">
+            <a href={`/projects/${project.id}/edit`} class="btn ghost">
+              <Icon name="edit" />
+              Ubah
+            </a>
+            <form
+              method="post"
+              action={`/api/projects/${project.id}/delete`}
+              onsubmit="return confirm('Hapus proyek ini beserta seluruh berkasnya? Tindakan ini tidak bisa dibatalkan.')"
+            >
+              <button class="btn danger" type="submit" data-busy="Menghapus…">
+                <Icon name="trash" />
+                Hapus
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <dl class="facts" style="margin-top:12px">
+          <div class="fact">
+            <dt>Mulai</dt>
+            <dd>{formatDate(project.start_date)}</dd>
+          </div>
+          <div class="fact">
+            <dt>Selesai</dt>
+            <dd>{formatDate(project.due_date)}</dd>
+          </div>
+          <div class="fact">
+            <dt>Berkas</dt>
+            <dd>{project.file_count}</dd>
+          </div>
+          <div class="fact">
+            <dt>Diperbarui</dt>
+            <dd>{formatDate(project.updated_at, true)}</dd>
+          </div>
+        </dl>
+
+        <section class="section" id="kelengkapan">
+          <div class="section-head">
+            <h2>Kelengkapan berkas</h2>
+            {requirements.length > 0 && (
+              <span class="muted small">{doneCount} dari {requirements.length} terpenuhi</span>
+            )}
+          </div>
+
+          <div class="card checklist">
+            {
+              requirements.length > 0 && (
+                <div class="checklist-meter">
+                  <div class="progress" role="progressbar" aria-label="Kelengkapan berkas" aria-valuemin={0} aria-valuemax={100} aria-valuenow={checklistPercent}>
+                    <span style={`width:${checklistPercent}%`} />
+                  </div>
+                  <p class="small muted">
+                    {doneCount === requirements.length ? 'Semua berkas wajib sudah lengkap.' : `${requirements.length - doneCount} berkas belum diunggah.`}
+                  </p>
+                </div>
+              )
+            }
+
+            <form method="post" action={`/api/projects/${project.id}/requirements`} class="req-add">
+              <input type="hidden" name="anchor" value="#kelengkapan" />
+              <label class="sr-only" for="req-title">Nama berkas yang wajib ada</label>
+              <input
+                id="req-title"
+                name="title"
+                required
+                maxlength="150"
+                placeholder="Tambahkan berkas wajib, mis. Kontrak"
+                autocomplete="off"
+              />
+              <button class="btn primary" type="submit" data-busy="Menambah…">
+                <Icon name="plus" />
+                Tambah
+              </button>
+            </form>
+            <div class="suggest" aria-label="Saran cepat">
+              {
+                suggestions.map((s) => (
+                  <button type="button" class="chip-suggest" data-fill={s}>{s}</button>
+                ))
+              }
+            </div>
+
+            {
+              requirements.length === 0 ? (
+                <p class="muted small req-empty">
+                  Belum ada daftar. Tulis dokumen yang wajib ada di proyek ini, lalu unggah filenya satu per satu.
+                </p>
+              ) : (
+                <ul class="req-list">
+                  {requirements.map((r) => {
+                    const done = r.file_count > 0;
+                    const linked = filesByReq.get(r.id) ?? [];
+                    return (
+                      <li class={`req-item${done ? ' is-done' : ''}`}>
+                        <div class="req-head">
+                          <span class="req-state" aria-hidden="true">
+                            {done ? <Icon name="check" /> : <span class="req-dot" />}
+                          </span>
+                          <div class="req-main">
+                            <div class="req-title">{r.title}</div>
+                            <div class="req-sub">
+                              {done ? `${r.file_count} berkas terunggah` : 'Belum ada berkas'}
+                            </div>
+                          </div>
+                          <details class="req-menu">
+                            <summary class="icon-btn" aria-label={`Opsi untuk ${r.title}`}>⋯</summary>
+                            <div class="req-menu-body">
+                              <form method="post" action={`/api/requirements/${r.id}/update`} class="req-rename">
+                                <input type="hidden" name="project_id" value={project.id} />
+                                <input type="hidden" name="anchor" value="#kelengkapan" />
+                                <input name="title" value={r.title} required maxlength="150" aria-label="Ubah nama berkas" />
+                                <button class="btn ghost small" type="submit" data-busy="…">Simpan</button>
+                              </form>
+                              <form
+                                method="post"
+                                action={`/api/requirements/${r.id}/delete`}
+                                onsubmit="return confirm('Hapus item ini dari daftar? Berkas yang sudah diunggah tetap disimpan di Berkas lainnya.')"
+                              >
+                                <input type="hidden" name="project_id" value={project.id} />
+                                <button class="btn danger small" type="submit" data-busy="Menghapus…">Hapus dari daftar</button>
+                              </form>
+                            </div>
+                          </details>
+                        </div>
+
+                        {
+                          linked.length > 0 && (
+                            <ul class="req-files">
+                              {linked.map((f) => {
+                                const kind = fileKind(f.original_name);
+                                return (
+                                  <li class="req-file">
+                                    <span class={`file-icon sm ${kind.kind}`} aria-hidden="true">{kind.label}</span>
+                                    {previewKind(f.original_name) !== 'none' && (
+                                      <button type="button" class="icon-btn sm" data-preview data-id={f.id} data-name={f.original_name} aria-label={`Lihat ${f.original_name}`}>
+                                        <Icon name="eye" />
+                                      </button>
+                                    )}
+                                    <a class="req-file-name" href={`/api/files/${f.id}`} download title={f.original_name}>
+                                      {f.original_name}
+                                    </a>
+                                    <span class="req-file-size">{formatBytes(f.size_bytes)}</span>
+                                    <form
+                                      method="post"
+                                      action={`/api/files/${f.id}/delete`}
+                                      onsubmit={`return confirm('Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?')`}
+                                    >
+                                      <input type="hidden" name="project_id" value={project.id} />
+                                      <input type="hidden" name="anchor" value="#kelengkapan" />
+                                      <button class="icon-btn sm" type="submit" aria-label={`Hapus ${f.original_name}`}>
+                                        <Icon name="trash" />
+                                      </button>
+                                    </form>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )
+                        }
+
+                        <form method="post" action={`/api/projects/${project.id}/files`} enctype="multipart/form-data" class="req-upload">
+                          <input type="hidden" name="requirement_id" value={r.id} />
+                          <input type="hidden" name="anchor" value="#kelengkapan" />
+                          <label class="btn ghost small req-btn">
+                            <Icon name="upload" />
+                            <span class="req-btn-text">{done ? 'Tambah berkas' : 'Unggah berkas'}</span>
+                            <input class="sr-only" type="file" name="file" required data-autoupload />
+                          </label>
+                        </form>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            }
+          </div>
+        </section>
+
+        <section class="section" id="berkas">
+          <div class="section-head">
+            <h2>Berkas lainnya</h2>
+            <span class="muted small">{looseFiles.length} berkas · maks. 25 MB</span>
+          </div>
+
+          <form method="post" action={`/api/projects/${project.id}/files`} enctype="multipart/form-data" class="dropzone-form">
+            <input type="hidden" name="anchor" value="#berkas" />
+            <label class="dropzone">
+              <span class="dz-ico"><Icon name="upload" /></span>
+              <span class="dz-title">Ketuk untuk memilih berkas</span>
+              <span class="dz-sub">PDF, gambar, dokumen, atau arsip. Berkas langsung diunggah.</span>
+              <input class="sr-only" type="file" name="file" required data-autoupload />
+            </label>
+          </form>
+
+          {
+            looseFiles.length === 0 ? (
+              <div class="card empty">
+                <span class="empty-ico"><Icon name="file" /></span>
+                <h2>Belum ada berkas lain</h2>
+                <p>Berkas yang tidak masuk daftar kelengkapan akan tampil di sini.</p>
+              </div>
+            ) : (
+              <ul class="file-list">
+                {looseFiles.map((f) => {
+                  const kind = fileKind(f.original_name);
+                  return (
+                    <li class="file-item">
+                      <span class={`file-icon ${kind.kind}`} aria-hidden="true">{kind.label}</span>
+                      <div style="min-width:0">
+                        <div class="file-name">{f.original_name}</div>
+                        <div class="file-sub">
+                          {formatBytes(f.size_bytes)} · {f.uploaded_by_name} · {formatDate(f.created_at, true)}
+                        </div>
+                      </div>
+                      <div class="file-actions">
+                        {previewKind(f.original_name) !== 'none' && (
+                          <button type="button" class="btn ghost small" data-preview data-id={f.id} data-name={f.original_name}>
+                            <Icon name="eye" />
+                            Lihat
+                          </button>
+                        )}
+                        <a class="btn ghost small" href={`/api/files/${f.id}`} download>
+                          <Icon name="download" />
+                          Unduh
+                        </a>
+                        <form
+                          method="post"
+                          action={`/api/files/${f.id}/delete`}
+                          onsubmit={`return confirm('Hapus berkas "${f.original_name.replace(/["'\\]/g, '')}"?')`}
+                        >
+                          <input type="hidden" name="project_id" value={project.id} />
+                          <input type="hidden" name="anchor" value="#berkas" />
+                          <button class="btn danger small" type="submit" aria-label={`Hapus ${f.original_name}`}>
+                            <Icon name="trash" />
+                          </button>
+                        </form>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )
+          }
+        </section>
+      </>
+    )
+  }
+
+  <FilePreview />
+</Layout>
+
+<script>
+  import '../../../scripts/preview';
+</script>

@@ -1,0 +1,20 @@
+---
+// Dialog pratinjau berkas. Diisi oleh src/scripts/preview.ts.
+import Icon from './Icon.astro';
+---
+
+<dialog id="file-preview" class="preview-dialog" aria-labelledby="file-preview-title">
+  <header class="preview-head">
+    <h2 id="file-preview-title" class="preview-title"></h2>
+    <div class="preview-actions">
+      <a id="file-preview-download" class="btn ghost small" href="#" download>
+        <Icon name="download" />
+        <span>Unduh</span>
+      </a>
+      <button type="button" class="icon-btn" data-preview-close aria-label="Tutup pratinjau">
+        <Icon name="x" />
+      </button>
+    </div>
+  </header>
+  <div id="file-preview-body" class="preview-body"></div>
+</dialog>
