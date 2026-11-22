@@ -3494,13 +3494,20 @@ a.kpi:hover {
 }
 
 .req-file {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px 6px 6px;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 6px 6px 6px;
   border-radius: 10px;
   background: var(--surface-2);
+}
+
+.req-file > .file-icon,
+.req-file > .icon-btn,
+.req-file > form,
+.req-file > .req-file-size {
+  flex-shrink: 0;
 }
 
 .req-file form {
@@ -3508,6 +3515,7 @@ a.kpi:hover {
 }
 
 .req-file-name {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4484,4 +4492,21 @@ a.pager-btn:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 220px;
+}
+
+/* ---------- Baris berkas kelengkapan & tautan Drive di layar kecil ---------- */
+@media (max-width: 639px) {
+  .req-drive {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .req-drive .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .req-file-size {
+    display: none;
+  }
 }
