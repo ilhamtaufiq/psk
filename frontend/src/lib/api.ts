@@ -266,10 +266,16 @@ export interface ReportSummary {
   files_total: number;
   requirements_total: number;
   requirements_done: number;
+  tickets_open: number;
+  tickets_in_progress: number;
+  tickets_done: number;
 }
 
 export interface ReportProject extends Project {
   missing_requirements: string[];
+  tickets_open: number;
+  tickets_in_progress: number;
+  tickets_done: number;
 }
 
 export interface RecapItem {

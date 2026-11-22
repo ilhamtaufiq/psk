@@ -87,6 +87,11 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
       <span class="kpi-value">{summary.files_total}</span>
       <span class="kpi-sub">file tersimpan</span>
     </div>
+    <div class="card kpi">
+      <span class="kpi-label">Tiket terbuka</span>
+      <span class="kpi-value">{summary.tickets_open}</span>
+      <span class="kpi-sub">{summary.tickets_in_progress} dikerjakan · {summary.tickets_done} selesai</span>
+    </div>
   </section>
 
   <section class="card report-status screen-only" aria-label="Distribusi status">
@@ -204,6 +209,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
       <div class={summary.overdue > 0 ? 'print-warn' : ''}><dt>Terlambat</dt><dd>{summary.overdue}</dd></div>
       <div><dt>Kelengkapan</dt><dd>{reqPercent}%</dd></div>
       <div><dt>Berkas</dt><dd>{summary.files_total}</dd></div>
+      <div><dt>Tiket terbuka</dt><dd>{summary.tickets_open}</dd></div>
     </dl>
 
     <section class="print-status-block">

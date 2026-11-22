@@ -32,6 +32,9 @@ pub struct StatusCount {
 #[derive(Serialize)]
 pub struct ReportSummary {
     pub generated_at: String,
+    pub tickets_open: i64,
+    pub tickets_in_progress: i64,
+    pub tickets_done: i64,
     pub today: String,
     pub total: i64,
     pub overdue: i64,
@@ -48,6 +51,37 @@ pub struct ReportProject {
     #[serde(flatten)]
     pub project: Project,
     pub missing_requirements: Vec<String>,
+    pub tickets_open: i64,
+    pub tickets_in_progress: i64,
+    pub tickets_done: i64,
+}
+
+/// Jumlah tiket per project (terbuka, dikerjakan, selesai) untuk semua project yang bisa diakses pengguna.
+async fn ticket_counts(
+    state: &AppState,
+    user_id: &str,
+) -> Result<std::collections::HashMap<String, (i64, i64, i64)>, AppError> {
+    let rows: Vec<(String, String, i64)> = sqlx::query_as(
+        "SELECT t.project_id, t.status, COUNT(*) FROM tickets t
+         WHERE t.project_id IN (SELECT id FROM projects WHERE owner_id = ?
+                                UNION SELECT project_id FROM project_members WHERE user_id = ?)
+         GROUP BY t.project_id, t.status",
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .fetch_all(&state.pool)
+    .await?;
+    let mut map: std::collections::HashMap<String, (i64, i64, i64)> = std::collections::HashMap::new();
+    for (pid, status, n) in rows {
+        let e = map.entry(pid).or_insert((0, 0, 0));
+        match status.as_str() {
+            "open" => e.0 += n,
+            "in_progress" => e.1 += n,
+            "done" => e.2 += n,
+            _ => {}
+        }
+    }
+    Ok(map)
 }
 
 /// Rekap satu item kelengkapan lintas project: berapa project punya item ini, dan berapa sudah ada berkasnya.
@@ -177,6 +211,10 @@ fn summarize(projects: &[Project]) -> ReportSummary {
         files_total: projects.iter().map(|p| p.file_count).sum(),
         requirements_total: projects.iter().map(|p| p.req_total).sum(),
         requirements_done: projects.iter().map(|p| p.req_done).sum(),
+        // Dihitung ulang di json() dari jumlah tiket per project.
+        tickets_open: 0,
+        tickets_in_progress: 0,
+        tickets_done: 0,
     }
 }
 
@@ -228,15 +266,26 @@ pub async fn json(
 ) -> Result<Json<ReportResponse>, AppError> {
     let recap = requirement_recap(&state, &user.id, &q).await?;
     let projects = load(&state, &user.id, &q).await?;
-    let summary = summarize(&projects);
+    let mut summary = summarize(&projects);
+    let mut tickets = ticket_counts(&state, &user.id).await?;
     let mut missing = missing_requirements(&state, &user.id).await?;
-    let projects = projects
+    let projects: Vec<ReportProject> = projects
         .into_iter()
         .map(|p| {
             let missing_requirements = missing.remove(&p.id).unwrap_or_default();
-            ReportProject { project: p, missing_requirements }
+            let (open, in_progress, done) = tickets.remove(&p.id).unwrap_or((0, 0, 0));
+            ReportProject {
+                project: p,
+                missing_requirements,
+                tickets_open: open,
+                tickets_in_progress: in_progress,
+                tickets_done: done,
+            }
         })
         .collect();
+    summary.tickets_open = projects.iter().map(|p| p.tickets_open).sum();
+    summary.tickets_in_progress = projects.iter().map(|p| p.tickets_in_progress).sum();
+    summary.tickets_done = projects.iter().map(|p| p.tickets_done).sum();
     Ok(Json(ReportResponse { summary, projects, recap }))
 }
 
@@ -262,10 +311,12 @@ pub async fn csv(
     let today = today_wib();
 
     let mut out = String::from("\u{feff}");
-    out.push_str("Nama,Jenis,Status,Peran Anda,Tanggal mulai,Tanggal selesai,Terlambat,Kelengkapan,Belum ada berkas,Jumlah berkas\r\n");
+    out.push_str("Nama,Jenis,Status,Peran Anda,Tanggal mulai,Tanggal selesai,Terlambat,Kelengkapan,Belum ada berkas,Jumlah berkas,Tiket terbuka,Tiket dikerjakan,Tiket selesai\r\n");
     let mut missing = missing_requirements(&state, &user.id).await?;
+    let mut tickets = ticket_counts(&state, &user.id).await?;
     for p in &projects {
         let missing_items = missing.remove(&p.id).unwrap_or_default().join("; ");
+        let (open, in_progress, done) = tickets.remove(&p.id).unwrap_or((0, 0, 0));
         let row = [
             csv_cell(&p.name),
             csv_cell(&p.project_type_label),
@@ -277,6 +328,9 @@ pub async fn csv(
             csv_cell(&format!("{}/{}", p.req_done, p.req_total)),
             csv_cell(&missing_items),
             csv_cell(&p.file_count.to_string()),
+            csv_cell(&open.to_string()),
+            csv_cell(&in_progress.to_string()),
+            csv_cell(&done.to_string()),
         ];
         out.push_str(&row.join(","));
         out.push_str("\r\n");

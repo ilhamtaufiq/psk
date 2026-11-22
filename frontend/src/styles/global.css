@@ -4776,3 +4776,9 @@ a.pager-btn:hover {
 .ticket-manage[open] > summary {
   margin-bottom: 6px;
 }
+
+@media (min-width: 900px) {
+  .report-kpis {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
