@@ -4965,3 +4965,35 @@ a.pager-btn:hover {
   bottom: 0;
   background: var(--surface);
 }
+
+.ticket-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- Tab halaman detail project ---------- */
+[data-tab][hidden] {
+  display: none !important;
+}
+
+.tab-nav {
+  scroll-behavior: smooth;
+}
+
+.tab-nav a[aria-current='page'] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+[data-tab] {
+  scroll-margin-top: calc(var(--top-h) + 64px);
+}
+
+.tab-nav a[aria-current='page'],
+.tab-nav a[aria-current='page']:hover {
+  color: var(--accent-text);
+}

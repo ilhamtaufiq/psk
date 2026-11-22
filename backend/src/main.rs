@@ -146,8 +146,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/notifications/{id}/read", put(notifications::read))
         .route(
             "/api/projects/{id}/tickets",
-            get(tickets::list).post(tickets::create),
+            get(tickets::list)
+                .post(tickets::create)
+                .layer(DefaultBodyLimit::max(
+                    comments::MAX_ATTACHMENTS * comments::MAX_ATTACHMENT_BYTES + 1024 * 1024,
+                )),
         )
+        .route("/api/ticket-attachments/{id}", get(tickets::download))
         .route(
             "/api/tickets/{id}",
             put(tickets::update).delete(tickets::delete),

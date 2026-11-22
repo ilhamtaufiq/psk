@@ -47,6 +47,7 @@ if (root) {
       fresh.querySelectorAll('details').forEach((d, i) => {
         if (openStates[i]) d.open = true;
       });
+      document.dispatchEvent(new Event('psk:detail-updated'));
     } catch {
       // Jaringan putus: pembaruan berikutnya akan mencoba lagi.
     }

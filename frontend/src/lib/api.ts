@@ -83,8 +83,16 @@ export interface CommentAttachment {
 export type TicketStatus = 'open' | 'in_progress' | 'done';
 export type TicketPriority = 'low' | 'normal' | 'high';
 
+export interface TicketAttachment {
+  id: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+}
+
 export interface Ticket {
   id: string;
+  attachments: TicketAttachment[];
   title: string;
   description: string;
   status: TicketStatus;

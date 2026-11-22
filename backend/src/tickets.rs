@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
+    body::Body,
+    extract::{Multipart, Path, State},
+    http::{header, HeaderValue, StatusCode},
+    response::{IntoResponse, Response},
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -10,9 +14,32 @@ use uuid::Uuid;
 use crate::{
     access::{self, Role},
     auth::AuthUser,
+    comments::{MAX_ATTACHMENTS, MAX_ATTACHMENT_BYTES},
     error::AppError,
+    files::{content_disposition, sanitize_filename},
     now_iso, AppState,
 };
+
+#[derive(Serialize, Clone)]
+pub struct TicketAttachment {
+    pub id: String,
+    pub original_name: String,
+    pub mime_type: String,
+    pub size_bytes: i64,
+}
+
+#[derive(FromRow)]
+struct TicketAttachmentRow {
+    id: String,
+    ticket_id: String,
+    original_name: String,
+    mime_type: String,
+    size_bytes: i64,
+}
+
+fn ticket_dir(state: &AppState, project_id: &str, ticket_id: &str) -> std::path::PathBuf {
+    state.upload_dir.join(project_id).join("tickets").join(ticket_id)
+}
 
 const STATUSES: [&str; 3] = ["open", "in_progress", "done"];
 const PRIORITIES: [&str; 3] = ["low", "normal", "high"];
@@ -109,6 +136,9 @@ pub struct Ticket {
     #[sqlx(skip)]
     #[serde(default)]
     pub can_delete: bool,
+    #[sqlx(skip)]
+    #[serde(default)]
+    pub attachments: Vec<TicketAttachment>,
 }
 
 const TICKET_SELECT: &str = "SELECT t.id, t.title, t.description, t.status, t.priority, t.assignee_id,
@@ -164,11 +194,28 @@ pub async fn list(
         .fetch_all(&state.pool)
         .await?;
     let editor = matches!(my_role, Role::Owner | Role::Editor);
+    let attachment_rows = sqlx::query_as::<_, TicketAttachmentRow>(
+        "SELECT id, ticket_id, original_name, mime_type, size_bytes FROM ticket_attachments
+         WHERE project_id = ? ORDER BY created_at",
+    )
+    .bind(&project_id)
+    .fetch_all(&state.pool)
+    .await?;
+    let mut by_ticket: HashMap<String, Vec<TicketAttachment>> = HashMap::new();
+    for a in attachment_rows {
+        by_ticket.entry(a.ticket_id).or_default().push(TicketAttachment {
+            id: a.id,
+            original_name: a.original_name,
+            mime_type: a.mime_type,
+            size_bytes: a.size_bytes,
+        });
+    }
     for t in &mut rows {
         let author = t.created_by == user.id;
         // Status, prioritas, dan penanggung jawab hanya bisa diubah pemilik dan editor.
         t.can_manage = editor;
         t.can_delete = editor || author;
+        t.attachments = by_ticket.remove(&t.id).unwrap_or_default();
     }
     Ok(Json(rows))
 }
@@ -177,26 +224,111 @@ pub async fn create(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
     Path(project_id): Path<String>,
-    Json(input): Json<TicketInput>,
+    mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<Ticket>), AppError> {
     let my_role = access::require(&state.pool, &project_id, &user.id, Role::Viewer).await?;
+
+    // Formulir multipart: title, description, priority, dan nol atau lebih field attachment.
+    let bad_form = || AppError::BadRequest("Formulir tiket tidak valid".into());
+    let mut title = String::new();
+    let mut description = String::new();
+    let mut priority = String::new();
+    let mut files: Vec<(String, String, Vec<u8>)> = Vec::new();
+    while let Some(field) = multipart.next_field().await.map_err(|_| bad_form())? {
+        let name = field.name().unwrap_or("").to_string();
+        match name.as_str() {
+            "title" => title = field.text().await.map_err(|_| bad_form())?,
+            "description" => description = field.text().await.map_err(|_| bad_form())?,
+            "priority" => priority = field.text().await.map_err(|_| bad_form())?,
+            "attachment" => {
+                let file_name = sanitize_filename(field.file_name().unwrap_or("lampiran"));
+                let declared = field.content_type().unwrap_or("").to_string();
+                let data = field.bytes().await.map_err(|_| bad_form())?.to_vec();
+                if data.is_empty() {
+                    continue;
+                }
+                if data.len() > MAX_ATTACHMENT_BYTES {
+                    return Err(AppError::BadRequest("Lampiran maksimal 10 MB per berkas".into()));
+                }
+                if files.len() >= MAX_ATTACHMENTS {
+                    return Err(AppError::BadRequest(format!(
+                        "Maksimal {MAX_ATTACHMENTS} lampiran per tiket"
+                    )));
+                }
+                let mime = if declared.is_empty() || declared == "application/octet-stream" {
+                    mime_guess::from_path(&file_name).first_or_octet_stream().to_string()
+                } else {
+                    declared
+                };
+                files.push((file_name, mime, data));
+            }
+            _ => {}
+        }
+    }
+
+    let input = TicketInput {
+        title,
+        description: Some(description),
+        priority: if priority.trim().is_empty() { None } else { Some(priority) },
+    };
     let (title, description, priority) = validate_text(&input)?;
     let id = Uuid::new_v4().to_string();
     let now = now_iso();
-    sqlx::query(
-        "INSERT INTO tickets (id, project_id, title, description, status, priority, created_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?)",
-    )
-    .bind(&id)
-    .bind(&project_id)
-    .bind(&title)
-    .bind(&description)
-    .bind(&priority)
-    .bind(&user.id)
-    .bind(&now)
-    .bind(&now)
-    .execute(&state.pool)
-    .await?;
+
+    // Berkas ditulis ke disk dulu; bila penyimpanan database gagal, folder dibersihkan lagi.
+    let dir = ticket_dir(&state, &project_id, &id);
+    let mut stored: Vec<(String, String, String, Vec<u8>)> = Vec::with_capacity(files.len());
+    if !files.is_empty() {
+        tokio::fs::create_dir_all(&dir).await?;
+    }
+    for (file_name, mime, data) in files {
+        let att_id = Uuid::new_v4().to_string();
+        if let Err(e) = tokio::fs::write(dir.join(&att_id), &data).await {
+            let _ = tokio::fs::remove_dir_all(&dir).await;
+            return Err(e.into());
+        }
+        stored.push((att_id, file_name, mime, data));
+    }
+
+    let result: Result<(), AppError> = async {
+        let mut tx = state.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO tickets (id, project_id, title, description, status, priority, created_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(&project_id)
+        .bind(&title)
+        .bind(&description)
+        .bind(&priority)
+        .bind(&user.id)
+        .bind(&now)
+        .bind(&now)
+        .execute(&mut *tx)
+        .await?;
+        for (att_id, file_name, mime, data) in &stored {
+            sqlx::query(
+                "INSERT INTO ticket_attachments (id, ticket_id, project_id, original_name, mime_type, size_bytes, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+            )
+            .bind(att_id)
+            .bind(&id)
+            .bind(&project_id)
+            .bind(file_name)
+            .bind(mime)
+            .bind(data.len() as i64)
+            .bind(&now)
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+    .await;
+    if let Err(e) = result {
+        let _ = tokio::fs::remove_dir_all(&dir).await;
+        return Err(e);
+    }
 
     crate::events::publish(&state, &project_id, "ticket");
     notify(
@@ -213,10 +345,54 @@ pub async fn create(
     .await;
     let sql = format!("{TICKET_SELECT} WHERE t.id = ?");
     let mut ticket = sqlx::query_as::<_, Ticket>(&sql).bind(&id).fetch_one(&state.pool).await?;
-    // Sama seperti daftar: hanya pemilik dan editor yang bisa mengubah; pembuat selalu bisa menghapus.
+    // Pemilik dan editor boleh mengubah; pembuat (viewer) hanya boleh menghapus.
     ticket.can_manage = matches!(my_role, Role::Owner | Role::Editor);
     ticket.can_delete = true;
+    ticket.attachments = stored
+        .iter()
+        .map(|(att_id, file_name, mime, data)| TicketAttachment {
+            id: att_id.clone(),
+            original_name: file_name.clone(),
+            mime_type: mime.clone(),
+            size_bytes: data.len() as i64,
+        })
+        .collect();
     Ok((StatusCode::CREATED, Json(ticket)))
+}
+
+/// Unduhan lampiran tiket: selalu sebagai lampiran, dengan nosniff dan CSP sandbox.
+pub async fn download(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(id): Path<String>,
+) -> Result<Response, AppError> {
+    let row: Option<(String, String, String, String)> = sqlx::query_as(
+        "SELECT project_id, ticket_id, original_name, mime_type FROM ticket_attachments WHERE id = ?",
+    )
+    .bind(&id)
+    .fetch_optional(&state.pool)
+    .await?;
+    let (project_id, ticket_id, name, mime) =
+        row.ok_or_else(|| AppError::NotFound("Lampiran tidak ditemukan".into()))?;
+    access::require(&state.pool, &project_id, &user.id, Role::Viewer).await?;
+    let data = tokio::fs::read(ticket_dir(&state, &project_id, &ticket_id).join(&id))
+        .await
+        .map_err(|_| AppError::NotFound("Berkas lampiran tidak ditemukan di disk".into()))?;
+
+    let content_type = HeaderValue::from_str(&mime)
+        .unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream"));
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, content_type)
+        .header(header::CONTENT_DISPOSITION, content_disposition(&name, false))
+        .header(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"))
+        .header(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static("sandbox; default-src 'none'"),
+        )
+        .body(Body::from(data))
+        .map(IntoResponse::into_response)
+        .map_err(|e| AppError::Internal(e.to_string()))
 }
 
 /// Mengubah status, prioritas, atau penanggung jawab. Hanya pemilik dan editor.
@@ -349,6 +525,7 @@ pub async fn delete(
         return Err(AppError::Forbidden("Hanya pembuat, pemilik, atau editor yang bisa menghapus tiket".into()));
     }
     sqlx::query("DELETE FROM tickets WHERE id = ?").bind(&id).execute(&state.pool).await?;
+    let _ = tokio::fs::remove_dir_all(ticket_dir(&state, &project_id, &id)).await;
     crate::events::publish(&state, &project_id, "ticket");
     Ok(StatusCode::NO_CONTENT)
 }

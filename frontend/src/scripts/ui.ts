@@ -1,4 +1,5 @@
 import './comments';
+import './tabs';
 
 // Interaksi UI bersama: toast, dialog konfirmasi, progress navigasi, pencarian daftar,
 // validasi inline, dan unggah berkas dengan progress bar.

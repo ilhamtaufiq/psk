@@ -13,7 +13,7 @@ function setupForm(form: HTMLFormElement) {
   const input = form.querySelector<HTMLInputElement>('[data-attach-input]');
   const list = form.querySelector<HTMLUListElement>('[data-attach-list]');
   const note = form.querySelector<HTMLElement>('[data-attach-note]');
-  const textarea = form.querySelector<HTMLTextAreaElement>('textarea[name="body"]');
+  const textarea = form.querySelector<HTMLTextAreaElement>('textarea[data-attach-text]');
 
   let picked: File[] = [];
 
@@ -113,7 +113,8 @@ function setupForm(form: HTMLFormElement) {
     add(files);
   });
 
-  // Komentar harus berisi teks atau minimal satu lampiran.
+  // Komentar harus berisi teks atau minimal satu lampiran (tiket punya judul sendiri, jadi tidak dijaga di sini).
+  if (!form.hasAttribute('data-attach-guard')) return;
   form.addEventListener('submit', (event) => {
     const hasText = (textarea?.value ?? '').trim().length > 0;
     if (!hasText && picked.length === 0) {

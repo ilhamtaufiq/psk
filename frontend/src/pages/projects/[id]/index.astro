@@ -157,15 +157,14 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </section>
 
-        <nav class="section-nav" aria-label="Lompat ke bagian">
-          <a href="#ringkasan">Ringkasan</a>
-          <a href="#informasi">Informasi</a>
-          <a href="#kelengkapan">Kelengkapan</a>
-          <a href="#berkas">Berkas</a>
-          <a href="#anggota">Anggota</a>
-          <a href="#tiket">Tiket</a>
-          <a href="#komentar">Komentar</a>
-          <a href="#deskripsi">Deskripsi</a>
+        <nav class="section-nav tab-nav" aria-label="Bagian project">
+          <a href="#ringkasan" data-tab-link="ringkasan" aria-current="page">Ringkasan</a>
+          <a href="#informasi" data-tab-link="informasi">Informasi</a>
+          <a href="#kelengkapan" data-tab-link="kelengkapan">Kelengkapan</a>
+          <a href="#berkas" data-tab-link="berkas">Berkas</a>
+          <a href="#tiket" data-tab-link="tiket">Tiket</a>
+          <a href="#komentar" data-tab-link="komentar">Komentar</a>
+          <a href="#anggota" data-tab-link="anggota">Anggota</a>
         </nav>
 
         <dl class="facts" style="margin-top:12px">
@@ -191,7 +190,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </dl>
 
-        <section class="section" id="anggota">
+        <section class="section" data-tab="anggota" id="anggota">
           <div class="section-head">
             <h2>Anggota</h2>
             <span class="muted small">{(members?.members.length ?? 0) + 1} orang</span>
@@ -264,7 +263,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </section>
 
-        <section class="section" id="informasi">
+        <section class="section" data-tab="informasi" id="informasi">
           <div class="section-head">
             <h2>Informasi detail</h2>
             <span class="muted small">{fields.length} informasi</span>
@@ -351,7 +350,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </section>
 
-        <section class="section" id="deskripsi">
+        <section class="section" data-tab="ringkasan" id="deskripsi">
           <div class="section-head">
             <h2>Deskripsi</h2>
             <a href={`/projects/${project.id}/edit`} class="small can-edit">Ubah</a>
@@ -367,7 +366,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </section>
 
-        <section class="section" id="kelengkapan">
+        <section class="section" data-tab="kelengkapan" id="kelengkapan">
           <div class="section-head">
             <h2>Kelengkapan berkas</h2>
             {requirements.length > 0 && (
@@ -517,7 +516,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           </div>
         </section>
 
-        <section class="section" id="berkas">
+        <section class="section" data-tab="berkas" id="berkas">
           <div class="section-head">
             <h2>Berkas lainnya</h2>
             <span class="muted small">{looseFiles.length} berkas · maks. 25 MB</span>
@@ -596,21 +595,43 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           }
         </section>
 
-        <section class="section" id="tiket" aria-labelledby="h-tiket">
+        <section class="section" data-tab="tiket" id="tiket" aria-labelledby="h-tiket">
           <div class="section-head">
             <h2 id="h-tiket">Tiket</h2>
             <span class="muted small">{countOf('open')} terbuka · {countOf('done')} selesai</span>
           </div>
 
-          <form method="post" action={`/api/projects/${id}/tickets`} class="card form ticket-new">
+          <form
+            method="post"
+            action={`/api/projects/${id}/tickets`}
+            enctype="multipart/form-data"
+            class="card form ticket-new"
+            data-attach-form
+          >
             <label class="field">
               <span>Judul tiket <span class="req">*</span></span>
               <input name="title" required maxlength="150" placeholder="Mis. Foto lokasi belum diunggah" />
             </label>
             <label class="field">
               <span>Deskripsi</span>
-              <textarea name="description" rows="2" maxlength="2000" placeholder="Apa masalahnya, dan apa yang diharapkan?"></textarea>
+              <textarea
+                name="description"
+                data-attach-text
+                rows="2"
+                maxlength="2000"
+                placeholder="Apa masalahnya, dan apa yang diharapkan? Gambar bisa ditempel (Ctrl+V)."
+              ></textarea>
             </label>
+            <div class="attach-tools">
+              <label class="btn ghost small attach-pick">
+                <Icon name="paperclip" />
+                <span>Lampirkan berkas</span>
+                <input type="file" name="attachment" multiple class="sr-only" data-attach-input />
+              </label>
+              <span class="muted small">Maks. 5 berkas, 10 MB per berkas</span>
+            </div>
+            <ul class="attach-picked" data-attach-list hidden></ul>
+            <p class="attach-note alert error" data-attach-note role="alert" hidden></p>
             <label class="field">
               <span>Prioritas</span>
               <select name="priority">
@@ -643,6 +664,25 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                   </div>
                   <h3 class="ticket-title">{t.title}</h3>
                   {t.description && <p class="ticket-desc">{t.description}</p>}
+                  {t.attachments.length > 0 && (
+                    <ul class="ticket-files">
+                      {t.attachments.map((a) => (
+                        <li>
+                          <a class="comment-file" href={`/api/ticket-attachments/${a.id}`} download={a.original_name}>
+                            {a.mime_type.startsWith('image/') ? (
+                              <img src={`/api/ticket-attachments/${a.id}`} alt={a.original_name} loading="lazy" />
+                            ) : (
+                              <Icon name="file" />
+                            )}
+                            <span class="comment-file-text">
+                              <span class="comment-file-name">{a.original_name}</span>
+                              <span class="muted small">{formatBytes(a.size_bytes)}</span>
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <p class="muted small">
                     Dibuat {t.created_by_name} · {formatDate(t.created_at, true)}
                     {t.assignee_name ? ` · PJ: ${t.assignee_name}` : ''}
@@ -698,7 +738,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           )}
         </section>
 
-        <section class="section" id="komentar" aria-labelledby="h-komentar">
+        <section class="section" data-tab="komentar" id="komentar" aria-labelledby="h-komentar">
           <div class="section-head">
             <h2 id="h-komentar">Komentar</h2>
             <span class="muted small">{comments.length} komentar</span>
