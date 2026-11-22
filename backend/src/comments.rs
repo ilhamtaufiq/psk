@@ -306,6 +306,29 @@ pub async fn create(
     }
 
     crate::events::publish(&state, &project_id, "comment");
+    if parent_id.is_none() {
+        let staff: Vec<String> = sqlx::query_scalar(
+            "SELECT owner_id FROM projects WHERE id = ?
+             UNION SELECT user_id FROM project_members WHERE project_id = ? AND role = 'editor'",
+        )
+        .bind(&project_id)
+        .bind(&project_id)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
+        let link = format!("/projects/{project_id}#c-{comment_id}");
+        let preview: String = body.chars().take(140).collect();
+        crate::notifications::add(
+            &state.pool,
+            &staff,
+            &user.id,
+            "comment",
+            &format!("Komentar baru dari {}", user.name),
+            &preview,
+            &link,
+        )
+        .await;
+    }
     if let Some(pid) = &parent_id {
         let parent_author: Option<(String,)> =
             sqlx::query_as("SELECT user_id FROM project_comments WHERE id = ?")
@@ -476,5 +499,38 @@ pub async fn vote(
         .await?;
     }
     crate::events::publish(&state, &project_id, "comment");
+    crate::events::publish(&state, &project_id, "comment");
+    if input.value == 1 {
+        let author: Option<(String,)> =
+            sqlx::query_as("SELECT user_id FROM project_comments WHERE id = ?")
+                .bind(&id)
+                .fetch_optional(&state.pool)
+                .await?;
+        if let Some((author,)) = author {
+            let (likes,): (i64,) = sqlx::query_as(
+                "SELECT COUNT(*) FROM comment_votes WHERE comment_id = ? AND value = 1 AND user_id <> ?",
+            )
+            .bind(&id)
+            .bind(&author)
+            .fetch_one(&state.pool)
+            .await?;
+            let title = if likes == 1 {
+                "1 orang menyukai komentar Anda".to_string()
+            } else {
+                format!("{likes} orang menyukai komentar Anda")
+            };
+            let link = format!("/projects/{project_id}#c-{id}");
+            crate::notifications::upsert_grouped(
+                &state.pool,
+                &author,
+                "vote",
+                &format!("vote:{id}"),
+                &title,
+                "",
+                &link,
+            )
+            .await;
+        }
+    }
     Ok(StatusCode::NO_CONTENT)
 }

@@ -123,6 +123,9 @@ export interface AppNotification {
 
 export interface NotificationList {
   unread: number;
+  total: number;
+  page: number;
+  page_size: number;
   items: AppNotification[];
 }
 

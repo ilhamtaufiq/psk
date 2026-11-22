@@ -4902,3 +4902,66 @@ a.pager-btn:hover {
     max-height: calc(100vh - var(--top-h) - 24px);
   }
 }
+
+/* ---------- Halaman notifikasi ---------- */
+.notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.notif-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.notif-item:last-child {
+  border-bottom: 0;
+}
+
+.notif-item a {
+  display: grid;
+  gap: 3px;
+  padding: 14px 16px 14px 14px;
+  color: var(--text);
+  border-left: 3px solid transparent;
+}
+
+.notif-item a:hover {
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.notif-item.unread a {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.notif-title {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.notif-body {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+.notif-read-all form,
+.notif-read-all {
+  margin: 0;
+}
+
+.bell-all {
+  display: block;
+  padding: 10px 14px;
+  text-align: center;
+  font-weight: 650;
+  font-size: var(--fs-sm);
+  color: var(--accent);
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+}

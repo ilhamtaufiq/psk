@@ -74,7 +74,7 @@ const unread = notes?.unread ?? 0;
                   </header>
                   {notes && notes.items.length > 0 ? (
                     <ul class="bell-list">
-                      {notes.items.map((n) => (
+                      {notes.items.slice(0, 8).map((n) => (
                         <li class:list={['bell-item', !n.read && 'unread']}>
                           <a href={`/api/notifications/${n.id}/open`}>
                             <span class="bell-title">{n.title}</span>
@@ -87,6 +87,7 @@ const unread = notes?.unread ?? 0;
                   ) : (
                     <p class="muted bell-empty">Belum ada notifikasi.</p>
                   )}
+                  <a class="bell-all" href="/notifikasi">Lihat semua notifikasi</a>
                 </div>
               </details>
               <button class="icon-btn topbar-btn" type="button" data-open-palette aria-label="Cari project atau buka halaman (Ctrl+K)" title="Cari (Ctrl+K)">

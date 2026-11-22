@@ -1,0 +1,58 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import Pagination from '../components/Pagination.astro';
+import { api, type NotificationList } from '../lib/api';
+import { formatDate } from '../lib/format';
+
+const token = Astro.locals.token as string;
+const requested = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
+const data = await api<NotificationList>(`/api/notifications?page=${Number.isFinite(requested) ? Math.max(requested, 1) : 1}`, { token });
+const totalPages = Math.max(1, Math.ceil(data.total / data.page_size));
+---
+
+<Layout title="Notifikasi">
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Notifikasi</p>
+      <h1>Semua notifikasi</h1>
+      <p class="muted small" style="margin-top:4px">
+        {data.unread > 0 ? `${data.unread} belum dibaca` : 'Tidak ada yang belum dibaca'} · {data.total} total
+      </p>
+    </div>
+    {data.unread > 0 && (
+      <form method="post" action="/api/notifications/read-all" class="notif-read-all">
+        <button class="btn ghost small" type="submit"><Icon name="check" />Tandai semua dibaca</button>
+      </form>
+    )}
+  </section>
+
+  {data.items.length === 0 ? (
+    <div class="card empty">
+      <h2>Belum ada notifikasi</h2>
+      <p>Anda akan diberi tahu saat ada tiket, balasan, atau suka pada komentar Anda.</p>
+    </div>
+  ) : (
+    <ul class="card notif-list">
+      {data.items.map((n) => (
+        <li class:list={['notif-item', !n.read && 'unread']}>
+          <a href={`/api/notifications/${n.id}/open`}>
+            <span class="notif-title">{n.title}</span>
+            {n.body && <span class="notif-body">{n.body}</span>}
+            <span class="muted small">{formatDate(n.created_at, true)}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  <Pagination
+    page={data.page}
+    totalPages={totalPages}
+    totalItems={data.total}
+    pageSize={data.page_size}
+    path="/notifikasi"
+    query=""
+    label="Halaman notifikasi"
+  />
+</Layout>
