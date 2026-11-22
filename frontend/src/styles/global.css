@@ -300,7 +300,7 @@ main.container {
 
 .bottom-nav .fab {
   width: 48px;
-  height: 32px;
+  height: 26px;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -967,9 +967,8 @@ main.container {
   font-weight: 450;
 }
 
-input:not([type='radio']):not([type='checkbox']):not([type='file']),
-select,
-textarea {
+/* :where() menjaga spesifisitas nol agar gaya komponen (mis. .search-field input) bisa menimpanya */
+:where(input:not([type='radio']):not([type='checkbox']):not([type='file']), select, textarea) {
   width: 100%;
   min-height: 48px;
   padding: 12px 14px;
@@ -2832,7 +2831,7 @@ a.kpi:hover {
 
 @media (min-width: 640px) {
   .toolbar:has(.search-field) {
-    grid-template-columns: minmax(0, 1fr) 200px 200px;
+    grid-template-columns: minmax(0, 1fr) 200px 236px;
     max-width: 900px;
   }
 }
