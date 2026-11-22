@@ -306,6 +306,26 @@ pub async fn create(
     }
 
     crate::events::publish(&state, &project_id, "comment");
+    if let Some(pid) = &parent_id {
+        let parent_author: Option<(String,)> =
+            sqlx::query_as("SELECT user_id FROM project_comments WHERE id = ?")
+                .bind(pid)
+                .fetch_optional(&state.pool)
+                .await?;
+        if let Some((author,)) = parent_author {
+            let link = format!("/projects/{project_id}#c-{comment_id}");
+            crate::notifications::add(
+                &state.pool,
+                &[author],
+                &user.id,
+                "reply",
+                &format!("{} membalas komentar Anda", user.name),
+                &body.chars().take(140).collect::<String>(),
+                &link,
+            )
+            .await;
+        }
+    }
     let attachments = stored
         .iter()
         .map(|(att_id, f)| AttachmentView {

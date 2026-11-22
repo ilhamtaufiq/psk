@@ -111,6 +111,21 @@ export const TICKET_PRIORITY_LABELS: Record<TicketPriority, string> = {
   high: 'Tinggi',
 };
 
+export interface AppNotification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string;
+  created_at: string;
+  read: boolean;
+}
+
+export interface NotificationList {
+  unread: number;
+  items: AppNotification[];
+}
+
 export interface ProjectComment {
   id: string;
   author_name: string;

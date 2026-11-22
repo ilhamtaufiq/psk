@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import Icon from '../components/Icon.astro';
+import { api, type NotificationList } from '../lib/api';
+import { formatDate } from '../lib/format';
 
 interface Props {
   title: string;
@@ -14,6 +16,11 @@ const isReport = path === '/laporan';
 const isList = path === '/projects' || (path.startsWith('/projects/') && !path.startsWith('/projects/new'));
 const isNew = path.startsWith('/projects/new');
 const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
+// Notifikasi di dalam aplikasi; gagal dimuat tidak menghalangi halaman.
+const notes: NotificationList | null = user
+  ? await api<NotificationList>('/api/notifications', { token: Astro.locals.token }).catch(() => null)
+  : null;
+const unread = notes?.unread ?? 0;
 ---
 
 <!doctype html>
@@ -51,6 +58,37 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
         {
           user && (
             <>
+              <details class="bell">
+                <summary class="icon-btn topbar-btn bell-btn" aria-label={unread > 0 ? `Notifikasi, ${unread} belum dibaca` : 'Notifikasi'} title="Notifikasi">
+                  <Icon name="bell" />
+                  {unread > 0 && <span class="bell-count" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}
+                </summary>
+                <div class="bell-menu">
+                  <header class="bell-head">
+                    <strong>Notifikasi</strong>
+                    {unread > 0 && (
+                      <form method="post" action="/api/notifications/read-all">
+                        <button class="cnode-text-btn" type="submit">Tandai semua dibaca</button>
+                      </form>
+                    )}
+                  </header>
+                  {notes && notes.items.length > 0 ? (
+                    <ul class="bell-list">
+                      {notes.items.map((n) => (
+                        <li class:list={['bell-item', !n.read && 'unread']}>
+                          <a href={`/api/notifications/${n.id}/open`}>
+                            <span class="bell-title">{n.title}</span>
+                            {n.body && <span class="bell-body">{n.body}</span>}
+                            <span class="muted small">{formatDate(n.created_at, true)}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p class="muted bell-empty">Belum ada notifikasi.</p>
+                  )}
+                </div>
+              </details>
               <button class="icon-btn topbar-btn" type="button" data-open-palette aria-label="Cari project atau buka halaman (Ctrl+K)" title="Cari (Ctrl+K)">
                 <Icon name="search" />
               </button>
@@ -161,8 +199,9 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
 
       // Menu akun tertutup saat mengklik di luar.
       document.addEventListener('click', (event) => {
-        const menu = document.querySelector<HTMLDetailsElement>('details.account');
-        if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+        document.querySelectorAll<HTMLDetailsElement>('details.account, details.bell').forEach((menu) => {
+          if (menu.open && !menu.contains(event.target as Node)) menu.open = false;
+        });
       });
 
       // Tombol bertanda data-busy langsung menampilkan status saat formulir dikirim.

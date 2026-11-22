@@ -9,6 +9,7 @@ mod fields;
 mod files;
 mod health;
 mod mail;
+mod notifications;
 mod members;
 mod profile;
 mod projects;
@@ -140,6 +141,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route("/api/comment-attachments/{id}", get(comments::download))
         .route("/api/comments/{id}/vote", post(comments::vote))
+        .route("/api/notifications", get(notifications::list))
+        .route("/api/notifications/read-all", post(notifications::read_all))
+        .route("/api/notifications/{id}/read", put(notifications::read))
         .route(
             "/api/projects/{id}/tickets",
             get(tickets::list).post(tickets::create),

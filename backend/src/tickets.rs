@@ -37,6 +37,10 @@ async fn notify(
     subject: String,
     text: String,
 ) {
+    // Notifikasi di dalam aplikasi selalu disimpan, dengan atau tanpa SMTP.
+    let link = format!("/projects/{project_id}?status=open#tiket");
+    crate::notifications::add(&state.pool, recipients, actor, "ticket", &subject, &text, &link).await;
+
     let Some(cfg) = state.mail.clone() else { return };
     let project_name: String = sqlx::query_scalar("SELECT name FROM projects WHERE id = ?")
         .bind(project_id)
