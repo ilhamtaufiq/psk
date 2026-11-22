@@ -62,7 +62,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
                   <Icon name="plus" />
                   Project baru
                 </a>
-                <span class="user" title={user.email}>{user.name}</span>
+                <a class="user" href="/profile" title={`Profil saya · ${user.email}`} aria-current={path === '/profile' ? 'page' : undefined}>{user.name}</a>
                 <form method="post" action="/api/logout">
                   <button class="btn ghost small" type="submit" data-busy="Keluar…">Keluar</button>
                 </form>
