@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
+import Pagination from '../../components/Pagination.astro';
 import {
   api,
   PROJECT_SORTS,
@@ -43,7 +44,15 @@ const qs = new URLSearchParams();
 if (status) qs.set('status', status);
 if (type) qs.set('type', type);
 qs.set('sort', sort);
-const projects = await api<Project[]>(`/api/projects?${qs.toString()}`, { token });
+const allProjects = await api<Project[]>(`/api/projects?${qs.toString()}`, { token });
+
+// Paginasi di sisi server: daftar tetap diambil lengkap, lalu diiris per halaman.
+const PAGE_SIZE = 12;
+const totalPages = Math.max(1, Math.ceil(allProjects.length / PAGE_SIZE));
+const requestedPage = Number.parseInt(params.get('page') ?? '1', 10);
+const page = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
+const projects = allProjects.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+const pageQuery = qs.toString();
 
 const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
   .filter(Boolean)
@@ -56,7 +65,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
       <p class="eyebrow">Daftar project</p>
       <h1>{filterLabel || 'Semua project'}</h1>
       <p class="muted small" style="margin-top:4px">
-        {projects.length} project · diurutkan: {PROJECT_SORTS[sort].toLowerCase()}
+        {allProjects.length} project · diurutkan: {PROJECT_SORTS[sort].toLowerCase()}
       </p>
     </div>
     <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Project baru</a>
@@ -173,6 +182,15 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
         })}
       </ul>
       <p class="filter-empty" data-filter-empty hidden>Tidak ada project yang cocok dengan pencarian.</p>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={allProjects.length}
+        pageSize={PAGE_SIZE}
+        path="/projects"
+        query={pageQuery}
+        label="Halaman project"
+      />
     )
   }
 </Layout>

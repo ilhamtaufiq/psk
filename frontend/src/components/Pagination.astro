@@ -1,0 +1,68 @@
+---
+// Navigasi halaman. `query` berisi parameter filter yang sudah ada (tanpa `page`).
+interface Props {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  path: string;
+  query: string;
+  label?: string;
+}
+
+const { page, totalPages, totalItems, pageSize, path, query, label = 'Halaman' } = Astro.props;
+if (totalPages <= 1) return;
+
+const href = (n: number) => {
+  const q = new URLSearchParams(query);
+  if (n > 1) q.set('page', String(n));
+  else q.delete('page');
+  const qs = q.toString();
+  return qs ? `${path}?${qs}` : path;
+};
+
+// Susun nomor halaman dengan elipsis agar tetap ringkas di layar kecil.
+const pages: (number | 'gap')[] = [];
+for (let n = 1; n <= totalPages; n++) {
+  const near = Math.abs(n - page) <= 1;
+  if (n === 1 || n === totalPages || near) pages.push(n);
+  else if (pages[pages.length - 1] !== 'gap') pages.push('gap');
+}
+
+const from = (page - 1) * pageSize + 1;
+const to = Math.min(page * pageSize, totalItems);
+---
+
+<nav class="pager" aria-label="Navigasi halaman">
+  <p class="pager-info muted small">{from}–{to} dari {totalItems}</p>
+  <ul class="pager-list">
+    <li>
+      {page > 1 ? (
+        <a class="pager-btn" href={href(page - 1)} rel="prev" aria-label="Halaman sebelumnya">‹</a>
+      ) : (
+        <span class="pager-btn" aria-disabled="true">‹</span>
+      )}
+    </li>
+    {pages.map((n) =>
+      n === 'gap' ? (
+        <li><span class="pager-gap" aria-hidden="true">…</span></li>
+      ) : (
+        <li>
+          <a
+            class="pager-btn"
+            href={href(n)}
+            aria-label={`${label} ${n}`}
+            aria-current={n === page ? 'page' : undefined}
+          >{n}</a>
+        </li>
+      ),
+    )}
+    <li>
+      {page < totalPages ? (
+        <a class="pager-btn" href={href(page + 1)} rel="next" aria-label="Halaman berikutnya">›</a>
+      ) : (
+        <span class="pager-btn" aria-disabled="true">›</span>
+      )}
+    </li>
+  </ul>
+</nav>
