@@ -4283,3 +4283,64 @@ a.pager-btn:hover {
 .auth-split {
   overflow-x: clip;
 }
+
+/* ---------- Komentar project ---------- */
+.comment-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.comment-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment {
+  display: grid;
+  gap: 8px;
+}
+
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.comment-meta {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.comment-body {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  padding-left: 46px;
+}
+
+.comment-del {
+  margin: 0;
+}
+
+.avatar-sm {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+
+.comment-empty {
+  text-align: center;
+}

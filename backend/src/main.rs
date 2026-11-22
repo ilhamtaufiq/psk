@@ -1,4 +1,5 @@
 mod access;
+mod comments;
 mod auth;
 mod dashboard;
 mod events;
@@ -125,6 +126,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/projects/{id}/duplicate",
             post(projects::duplicate),
         )
+        .route(
+            "/api/projects/{id}/comments",
+            get(comments::list).post(comments::create),
+        )
+        .route("/api/comments/{id}", axum::routing::delete(comments::delete))
         .route(
             "/api/projects/{id}/members",
             get(members::list).post(members::add),

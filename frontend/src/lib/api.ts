@@ -73,6 +73,14 @@ export interface Requirement {
   file_count: number;
 }
 
+export interface ProjectComment {
+  id: string;
+  author_name: string;
+  body: string;
+  created_at: string;
+  can_delete: boolean;
+}
+
 export interface ProjectFile {
   id: string;
   project_id: string;

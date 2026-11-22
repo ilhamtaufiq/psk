@@ -9,6 +9,7 @@ import {
   type ProjectFile,
   type ProjectField,
   type MemberList,
+  type ProjectComment,
   type Requirement,
 } from '../../../lib/api';
 import { deadlineOf, fileKind, formatBytes, formatDate, timeProgress } from '../../../lib/format';
@@ -26,14 +27,16 @@ let files: ProjectFile[] = [];
 let requirements: Requirement[] = [];
 let fields: ProjectField[] = [];
 let members: MemberList | null = null;
+let comments: ProjectComment[] = [];
 
 try {
-  [project, files, requirements, fields, members] = await Promise.all([
+  [project, files, requirements, fields, members, comments] = await Promise.all([
     api<Project>(`/api/projects/${id}`, { token }),
     api<ProjectFile[]>(`/api/projects/${id}/files`, { token }),
     api<Requirement[]>(`/api/projects/${id}/requirements`, { token }),
     api<ProjectField[]>(`/api/projects/${id}/fields`, { token }),
     api<MemberList>(`/api/projects/${id}/members`, { token }),
+    api<ProjectComment[]>(`/api/projects/${id}/comments`, { token }),
   ]);
 } catch (err) {
   if (!(err instanceof ApiError && err.status === 404)) throw err;
@@ -141,6 +144,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           <a href="#kelengkapan">Kelengkapan</a>
           <a href="#berkas">Berkas</a>
           <a href="#anggota">Anggota</a>
+          <a href="#komentar">Komentar</a>
           <a href="#deskripsi">Deskripsi</a>
         </nav>
 
@@ -570,6 +574,61 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               </ul>
             )
           }
+        </section>
+
+        <section class="section" id="komentar" aria-labelledby="h-komentar">
+          <div class="section-head">
+            <h2 id="h-komentar">Komentar</h2>
+            <span class="muted small">{comments.length} komentar</span>
+          </div>
+
+          <form method="post" action={`/api/projects/${id}/comments`} class="card comment-form">
+            <label class="field">
+              <span class="sr-only">Tulis komentar</span>
+              <textarea
+                name="body"
+                rows="3"
+                maxlength="2000"
+                required
+                placeholder="Tulis masukan, catatan, atau pertanyaan untuk project ini…"
+              ></textarea>
+            </label>
+            <div class="form-actions">
+              <button class="btn primary" type="submit" data-busy="Mengirim…">Kirim komentar</button>
+            </div>
+          </form>
+
+          {comments.length === 0 ? (
+            <p class="card muted comment-empty">Belum ada komentar. Masukan Anda akan terlihat oleh semua anggota project.</p>
+          ) : (
+            <ul class="comment-list">
+              {comments.map((c) => (
+                <li class="card comment">
+                  <header class="comment-head">
+                    <span class="avatar-sm" aria-hidden="true">{c.author_name.trim().charAt(0).toUpperCase()}</span>
+                    <div class="comment-meta">
+                      <strong>{c.author_name}</strong>
+                      <span class="muted small">{formatDate(c.created_at, true)}</span>
+                    </div>
+                    {c.can_delete && (
+                      <form
+                        method="post"
+                        action={`/api/comments/${c.id}/delete`}
+                        data-confirm="Hapus komentar ini?"
+                        class="comment-del"
+                      >
+                        <input type="hidden" name="project_id" value={id} />
+                        <button class="icon-btn sm" type="submit" aria-label="Hapus komentar">
+                          <Icon name="trash" />
+                        </button>
+                      </form>
+                    )}
+                  </header>
+                  <p class="comment-body">{c.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </>
     )
