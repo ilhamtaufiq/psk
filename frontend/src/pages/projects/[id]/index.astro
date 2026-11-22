@@ -17,6 +17,9 @@ import { previewKind } from '../../../lib/preview';
 import FieldForm from '../../../components/FieldForm.astro';
 import InfoValue from '../../../components/InfoValue.astro';
 import FilePreview from '../../../components/FilePreview.astro';
+import CommentForm from '../../../components/CommentForm.astro';
+import CommentNode from '../../../components/CommentNode.astro';
+import { buildTree } from '../../../lib/comment-tree';
 
 const token = Astro.locals.token as string;
 const { id } = Astro.params;
@@ -28,6 +31,8 @@ let requirements: Requirement[] = [];
 let fields: ProjectField[] = [];
 let members: MemberList | null = null;
 let comments: ProjectComment[] = [];
+const sort = Astro.url.searchParams.get('sort') === 'new' ? 'new' : 'top';
+let tree: ReturnType<typeof buildTree> = [];
 
 try {
   [project, files, requirements, fields, members, comments] = await Promise.all([
@@ -38,6 +43,7 @@ try {
     api<MemberList>(`/api/projects/${id}/members`, { token }),
     api<ProjectComment[]>(`/api/projects/${id}/comments`, { token }),
   ]);
+  tree = buildTree(comments, sort);
 } catch (err) {
   if (!(err instanceof ApiError && err.status === 404)) throw err;
   Astro.response.status = 404;
@@ -582,86 +588,21 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             <span class="muted small">{comments.length} komentar</span>
           </div>
 
-          <form
-            method="post"
-            action={`/api/projects/${id}/comments`}
-            enctype="multipart/form-data"
-            class="card comment-form"
-            data-attach-form
-          >
-            <label class="field">
-              <span class="sr-only">Tulis komentar</span>
-              <textarea
-                name="body"
-                rows="3"
-                maxlength="2000"
-                placeholder="Tulis masukan, catatan, atau pertanyaan untuk project ini… Gambar bisa ditempel (Ctrl+V)."
-              ></textarea>
-            </label>
-            <div class="attach-tools">
-              <label class="btn ghost small attach-pick">
-                <Icon name="paperclip" />
-                <span>Lampirkan berkas</span>
-                <input type="file" name="attachment" multiple class="sr-only" data-attach-input />
-              </label>
-              <span class="muted small">Maks. 5 berkas, 10 MB per berkas</span>
-            </div>
-            <ul class="attach-picked" data-attach-list hidden></ul>
-            <p class="attach-note alert error" data-attach-note role="alert" hidden></p>
-            <div class="form-actions">
-              <button class="btn primary" type="submit" data-busy="Mengirim…">Kirim komentar</button>
-            </div>
-          </form>
+          <CommentForm projectId={id as string} sort={sort} />
 
-          {comments.length === 0 ? (
+          <nav class="comment-sort" aria-label="Urutkan komentar">
+            <a href={`/projects/${id}?sort=top#komentar`} aria-current={sort === 'top' ? 'page' : undefined}>Terpopuler</a>
+            <a href={`/projects/${id}?sort=new#komentar`} aria-current={sort === 'new' ? 'page' : undefined}>Terbaru</a>
+          </nav>
+
+          {tree.length === 0 ? (
             <p class="card muted comment-empty">Belum ada komentar. Masukan Anda akan terlihat oleh semua anggota project.</p>
           ) : (
-            <ul class="comment-list">
-              {comments.map((c) => (
-                <li class="card comment">
-                  <header class="comment-head">
-                    <span class="avatar-sm" aria-hidden="true">{c.author_name.trim().charAt(0).toUpperCase()}</span>
-                    <div class="comment-meta">
-                      <strong>{c.author_name}</strong>
-                      <span class="muted small">{formatDate(c.created_at, true)}</span>
-                    </div>
-                    {c.can_delete && (
-                      <form
-                        method="post"
-                        action={`/api/comments/${c.id}/delete`}
-                        data-confirm="Hapus komentar ini?"
-                        class="comment-del"
-                      >
-                        <input type="hidden" name="project_id" value={id} />
-                        <button class="icon-btn sm" type="submit" aria-label="Hapus komentar">
-                          <Icon name="trash" />
-                        </button>
-                      </form>
-                    )}
-                  </header>
-                  {c.body && <p class="comment-body">{c.body}</p>}
-                  {c.attachments.length > 0 && (
-                    <ul class="comment-files">
-                      {c.attachments.map((a) => (
-                        <li>
-                          <a class="comment-file" href={`/api/comment-attachments/${a.id}`} download={a.original_name}>
-                            {a.mime_type.startsWith('image/') ? (
-                              <img src={`/api/comment-attachments/${a.id}`} alt={a.original_name} loading="lazy" />
-                            ) : (
-                              <Icon name="file" />
-                            )}
-                            <span class="comment-file-text">
-                              <span class="comment-file-name">{a.original_name}</span>
-                              <span class="muted small">{formatBytes(a.size_bytes)}</span>
-                            </span>
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
+            <div class="cthread">
+              {tree.map((node) => (
+                <CommentNode node={node} depth={1} projectId={id as string} sort={sort} />
               ))}
-            </ul>
+            </div>
           )}
         </section>
       </>

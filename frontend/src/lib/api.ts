@@ -87,6 +87,11 @@ export interface ProjectComment {
   created_at: string;
   can_delete: boolean;
   attachments: CommentAttachment[];
+  parent_id: string | null;
+  score: number;
+  /** 1 naik, -1 turun, 0 belum memilih. */
+  my_vote: number;
+  deleted: boolean;
 }
 
 export interface ProjectFile {

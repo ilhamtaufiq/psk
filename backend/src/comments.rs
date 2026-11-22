@@ -7,7 +7,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -21,16 +21,22 @@ use crate::{
 
 pub const MAX_COMMENT_CHARS: usize = 2000;
 pub const MAX_ATTACHMENTS: usize = 5;
+/// Kedalaman maksimum balasan (komentar utama = 1).
+pub const MAX_DEPTH: i64 = 8;
 pub const MAX_ATTACHMENT_BYTES: usize = 10 * 1024 * 1024;
 const LIST_LIMIT: i64 = 200;
 
 #[derive(FromRow)]
 struct CommentRow {
     id: String,
+    parent_id: Option<String>,
     user_id: String,
     author_name: String,
     body: String,
     created_at: String,
+    deleted_at: Option<String>,
+    score: i64,
+    my_vote: Option<i64>,
 }
 
 #[derive(FromRow)]
@@ -53,12 +59,43 @@ pub struct AttachmentView {
 #[derive(Serialize)]
 pub struct CommentView {
     pub id: String,
+    pub parent_id: Option<String>,
     pub author_name: String,
     pub body: String,
     pub created_at: String,
     /// Benar bila pengguna yang melihat adalah penulis, pemilik, atau editor.
     pub can_delete: bool,
     pub attachments: Vec<AttachmentView>,
+    /// Jumlah suara naik dikurangi suara turun.
+    pub score: i64,
+    /// Suara pengguna yang melihat: 1, -1, atau 0 bila belum memilih.
+    pub my_vote: i64,
+    /// Komentar yang dihapus tetapi masih dipertahankan karena punya balasan.
+    pub deleted: bool,
+}
+
+#[derive(Deserialize)]
+pub struct VoteInput {
+    value: i64,
+}
+
+/// Jumlah tingkat dari komentar sampai komentar utama (komentar utama = 1).
+async fn depth_of(pool: &sqlx::SqlitePool, id: &str) -> Result<i64, AppError> {
+    let mut depth = 0;
+    let mut current = Some(id.to_string());
+    while let Some(cur) = current {
+        depth += 1;
+        if depth > MAX_DEPTH + 1 {
+            break;
+        }
+        let parent: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT parent_id FROM project_comments WHERE id = ?")
+                .bind(&cur)
+                .fetch_optional(pool)
+                .await?;
+        current = parent.and_then(|(p,)| p);
+    }
+    Ok(depth)
 }
 
 fn can_moderate(role: &Role) -> bool {
@@ -76,12 +113,15 @@ pub async fn list(
 ) -> Result<Json<Vec<CommentView>>, AppError> {
     let my_role = access::require(&state.pool, &project_id, &user.id, Role::Viewer).await?;
     let rows = sqlx::query_as::<_, CommentRow>(
-        "SELECT c.id, c.user_id, u.name AS author_name, c.body, c.created_at
+        "SELECT c.id, c.parent_id, c.user_id, u.name AS author_name, c.body, c.created_at, c.deleted_at,
+            (SELECT COALESCE(SUM(v.value), 0) FROM comment_votes v WHERE v.comment_id = c.id) AS score,
+            (SELECT v.value FROM comment_votes v WHERE v.comment_id = c.id AND v.user_id = ?) AS my_vote
          FROM project_comments c JOIN users u ON u.id = c.user_id
          WHERE c.project_id = ?
          ORDER BY c.created_at DESC
          LIMIT ?",
     )
+    .bind(&user.id)
     .bind(&project_id)
     .bind(LIST_LIMIT)
     .fetch_all(&state.pool)
@@ -109,13 +149,20 @@ pub async fn list(
     let mod_ok = can_moderate(&my_role);
     Ok(Json(
         rows.into_iter()
-            .map(|r| CommentView {
-                can_delete: mod_ok || r.user_id == user.id,
-                attachments: by_comment.remove(&r.id).unwrap_or_default(),
-                id: r.id,
-                author_name: r.author_name,
-                body: r.body,
-                created_at: r.created_at,
+            .map(|r| {
+                let deleted = r.deleted_at.is_some();
+                CommentView {
+                    can_delete: !deleted && (mod_ok || r.user_id == user.id),
+                    attachments: if deleted { Vec::new() } else { by_comment.remove(&r.id).unwrap_or_default() },
+                    author_name: if deleted { "[dihapus]".into() } else { r.author_name },
+                    body: if deleted { String::new() } else { r.body },
+                    parent_id: r.parent_id,
+                    score: r.score,
+                    my_vote: r.my_vote.unwrap_or(0),
+                    deleted,
+                    id: r.id,
+                    created_at: r.created_at,
+                }
             })
             .collect(),
     ))
@@ -139,11 +186,19 @@ pub async fn create(
 
     let bad_form = || AppError::BadRequest("Formulir komentar tidak valid".into());
     let mut body = String::new();
+    let mut parent_id: Option<String> = None;
     let mut files: Vec<PendingFile> = Vec::new();
     while let Some(field) = multipart.next_field().await.map_err(|_| bad_form())? {
         let field_name = field.name().unwrap_or("").to_string();
         match field_name.as_str() {
             "body" => body = field.text().await.map_err(|_| bad_form())?,
+            "parent_id" => {
+                let value = field.text().await.map_err(|_| bad_form())?;
+                let value = value.trim().to_string();
+                if !value.is_empty() {
+                    parent_id = Some(value);
+                }
+            }
             "attachment" => {
                 let name = sanitize_filename(field.file_name().unwrap_or("lampiran"));
                 let declared = field.content_type().unwrap_or("").to_string();
@@ -180,6 +235,25 @@ pub async fn create(
         return Err(AppError::BadRequest("Tulis komentar atau lampirkan berkas".into()));
     }
 
+    if let Some(pid) = &parent_id {
+        let parent: Option<(String, Option<String>)> =
+            sqlx::query_as("SELECT project_id, deleted_at FROM project_comments WHERE id = ?")
+                .bind(pid)
+                .fetch_optional(&state.pool)
+                .await?;
+        match parent {
+            Some((pp, _)) if pp != project_id => {
+                return Err(AppError::BadRequest("Komentar yang dibalas tidak ditemukan".into()))
+            }
+            None => return Err(AppError::BadRequest("Komentar yang dibalas tidak ditemukan".into())),
+            Some((_, Some(_))) => return Err(AppError::BadRequest("Komentar ini sudah dihapus".into())),
+            Some(_) => {}
+        }
+        if depth_of(&state.pool, pid).await? >= MAX_DEPTH {
+            return Err(AppError::BadRequest("Balasan sudah mencapai batas kedalaman".into()));
+        }
+    }
+
     let comment_id = Uuid::new_v4().to_string();
     let now = now_iso();
     let dir = comment_dir(&state, &project_id, &comment_id);
@@ -197,13 +271,14 @@ pub async fn create(
     let result: Result<(), AppError> = async {
         let mut tx = state.pool.begin().await?;
         sqlx::query(
-            "INSERT INTO project_comments (id, project_id, user_id, body, created_at) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO project_comments (id, project_id, user_id, body, created_at, parent_id) VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(&comment_id)
         .bind(&project_id)
         .bind(&user.id)
         .bind(&body)
         .bind(&now)
+        .bind(&parent_id)
         .execute(&mut *tx)
         .await?;
         for (att_id, f) in &stored {
@@ -244,11 +319,15 @@ pub async fn create(
         StatusCode::CREATED,
         Json(CommentView {
             id: comment_id,
+            parent_id,
             author_name: user.name.clone(),
             body,
             created_at: now,
             can_delete: true,
             attachments,
+            score: 0,
+            my_vote: 0,
+            deleted: false,
         }),
     ))
 }
@@ -273,11 +352,28 @@ pub async fn delete(
         ));
     }
 
-    // Baris lampiran ikut terhapus lewat ON DELETE CASCADE; berkasnya dihapus dari disk.
-    sqlx::query("DELETE FROM project_comments WHERE id = ?")
+    let (replies,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM project_comments WHERE parent_id = ?")
         .bind(&id)
-        .execute(&state.pool)
+        .fetch_one(&state.pool)
         .await?;
+    if replies > 0 {
+        // Punya balasan: thread dipertahankan sebagai tombstone, isi dan lampiran dibuang.
+        sqlx::query("UPDATE project_comments SET deleted_at = ?, body = '' WHERE id = ?")
+            .bind(now_iso())
+            .bind(&id)
+            .execute(&state.pool)
+            .await?;
+        sqlx::query("DELETE FROM comment_attachments WHERE comment_id = ?")
+            .bind(&id)
+            .execute(&state.pool)
+            .await?;
+    } else {
+        // Baris lampiran dan vote ikut terhapus lewat ON DELETE CASCADE.
+        sqlx::query("DELETE FROM project_comments WHERE id = ?")
+            .bind(&id)
+            .execute(&state.pool)
+            .await?;
+    }
     let _ = tokio::fs::remove_dir_all(comment_dir(&state, &project_id, &id)).await;
     crate::events::publish(&state, &project_id, "comment");
     Ok(StatusCode::NO_CONTENT)
@@ -318,4 +414,47 @@ pub async fn download(
         .body(Body::from(data))
         .map(IntoResponse::into_response)
         .map_err(|e| AppError::Internal(e.to_string()))
+}
+
+/// Memberi, mengubah, atau mencabut suara. Nilai 1 (naik), -1 (turun), atau 0 (cabut).
+pub async fn vote(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(id): Path<String>,
+    Json(input): Json<VoteInput>,
+) -> Result<StatusCode, AppError> {
+    if !(-1..=1).contains(&input.value) {
+        return Err(AppError::BadRequest("Nilai suara tidak valid".into()));
+    }
+    let row: Option<(String, Option<String>)> =
+        sqlx::query_as("SELECT project_id, deleted_at FROM project_comments WHERE id = ?")
+            .bind(&id)
+            .fetch_optional(&state.pool)
+            .await?;
+    let (project_id, deleted) =
+        row.ok_or_else(|| AppError::NotFound("Komentar tidak ditemukan".into()))?;
+    access::require(&state.pool, &project_id, &user.id, Role::Viewer).await?;
+    if deleted.is_some() {
+        return Err(AppError::BadRequest("Komentar sudah dihapus".into()));
+    }
+
+    if input.value == 0 {
+        sqlx::query("DELETE FROM comment_votes WHERE comment_id = ? AND user_id = ?")
+            .bind(&id)
+            .bind(&user.id)
+            .execute(&state.pool)
+            .await?;
+    } else {
+        sqlx::query(
+            "INSERT INTO comment_votes (comment_id, user_id, value) VALUES (?, ?, ?)
+             ON CONFLICT (comment_id, user_id) DO UPDATE SET value = excluded.value",
+        )
+        .bind(&id)
+        .bind(&user.id)
+        .bind(input.value)
+        .execute(&state.pool)
+        .await?;
+    }
+    crate::events::publish(&state, &project_id, "comment");
+    Ok(StatusCode::NO_CONTENT)
 }

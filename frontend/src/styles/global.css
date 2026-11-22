@@ -4510,3 +4510,190 @@ a.pager-btn:hover {
     display: none;
   }
 }
+
+/* ---------- Komentar bertingkat (ala thread) ---------- */
+.comment-sort {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 10px;
+}
+
+.comment-sort a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+.comment-sort a[aria-current='page'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cthread {
+  display: grid;
+  gap: 10px;
+}
+
+.cnode {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.cnode-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  min-width: 0;
+}
+
+.cnode-head::-webkit-details-marker {
+  display: none;
+}
+
+.cnode-head::after {
+  content: '–';
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.cnode:not([open]) > .cnode-head::after {
+  content: '+';
+}
+
+.cnode-meta {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.cnode-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cnode-body .comment-body,
+.cnode-body .comment-files {
+  padding-left: 0;
+}
+
+.cnode-deleted {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.cnode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.cnode-actions details.reply {
+  width: 100%;
+}
+
+.cnode-actions details.reply > summary,
+.cnode-text-btn {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.cnode-actions details.reply > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cnode-actions details.reply > summary:hover,
+.cnode-text-btn:hover {
+  color: var(--accent);
+}
+
+.cnode-actions .comment-del {
+  margin: 0;
+}
+
+.vote-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+}
+
+.vote-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.vote-btn:hover {
+  background: var(--surface-2);
+}
+
+.vote-btn.on-up {
+  color: var(--ok);
+}
+
+.vote-btn.on-down {
+  color: var(--danger);
+}
+
+.vote-score {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+
+.cthread > .cnode > .cnode-body {
+  padding-left: 44px;
+}
+
+.cnode-children {
+  margin-top: 10px;
+  margin-left: 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  display: grid;
+  gap: 10px;
+}
+
+.cnode-children.cnode-flat {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
+.comment-form-compact {
+  padding: 10px;
+  box-shadow: none;
+}
+
+.comment-form-compact textarea {
+  min-height: 72px;
+}
+
+/* Balasan bersarang tidak perlu kartu sendiri; garis indentasi sudah cukup dan menjaga lebar layar kecil. */
+.cnode-children > .cnode {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}

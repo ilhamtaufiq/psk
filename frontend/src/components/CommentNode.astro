@@ -1,0 +1,125 @@
+---
+import Icon from './Icon.astro';
+import CommentForm from './CommentForm.astro';
+import CommentNode from './CommentNode.astro';
+import { formatBytes, formatDate } from '../lib/format';
+import type { ThreadNode } from '../lib/comment-tree';
+
+// Batas kedalaman balasan (sama dengan backend). Di tingkat ini tidak ada balasan lagi.
+const MAX_DEPTH = 8;
+// Indentasi berhenti setelah tingkat ini agar tetap terbaca di layar kecil.
+const FLAT_FROM = 5;
+
+interface Props {
+  node: ThreadNode;
+  depth: number;
+  projectId: string;
+  sort: string;
+}
+
+const { node, depth, projectId, sort } = Astro.props;
+const canReply = !node.deleted && depth < MAX_DEPTH;
+const initial = node.author_name.trim().charAt(0).toUpperCase() || '?';
+const up = node.my_vote === 1;
+const down = node.my_vote === -1;
+---
+
+<details class="cnode" id={`c-${node.id}`} open>
+  <summary class="cnode-head">
+    <span class="avatar-sm" aria-hidden="true">{initial}</span>
+    <span class="cnode-meta">
+      <strong>{node.author_name}</strong>
+      <span class="muted small">{formatDate(node.created_at, true)}</span>
+    </span>
+  </summary>
+
+  <div class="cnode-body">
+    {node.deleted ? (
+      <p class="cnode-deleted">[komentar dihapus]</p>
+    ) : (
+      node.body && <p class="comment-body">{node.body}</p>
+    )}
+
+    {
+      !node.deleted && node.attachments.length > 0 && (
+        <ul class="comment-files">
+          {node.attachments.map((a) => (
+            <li>
+              <a class="comment-file" href={`/api/comment-attachments/${a.id}`} download={a.original_name}>
+                {a.mime_type.startsWith('image/') ? (
+                  <img src={`/api/comment-attachments/${a.id}`} alt={a.original_name} loading="lazy" />
+                ) : (
+                  <Icon name="file" />
+                )}
+                <span class="comment-file-text">
+                  <span class="comment-file-name">{a.original_name}</span>
+                  <span class="muted small">{formatBytes(a.size_bytes)}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <div class="cnode-actions">
+      {
+        !node.deleted && (
+          <form method="post" action={`/api/comments/${node.id}/vote`} class="vote-form" aria-label="Suara">
+            <input type="hidden" name="project_id" value={projectId} />
+            <input type="hidden" name="sort" value={sort} />
+            <button
+              class:list={['vote-btn', up && 'on-up']}
+              name="value"
+              value={up ? 0 : 1}
+              aria-pressed={up ? 'true' : 'false'}
+              aria-label={up ? 'Batalkan suka' : 'Suka'}
+              title="Suka"
+            >
+              <Icon name="arrow-up" />
+            </button>
+            <span class="vote-score" aria-label={`${node.score} suara`}>{node.score}</span>
+            <button
+              class:list={['vote-btn', down && 'on-down']}
+              name="value"
+              value={down ? 0 : -1}
+              aria-pressed={down ? 'true' : 'false'}
+              aria-label={down ? 'Batalkan tidak suka' : 'Tidak suka'}
+              title="Tidak suka"
+            >
+              <Icon name="arrow-down" />
+            </button>
+          </form>
+        )
+      }
+
+      {
+        canReply && (
+          <details class="reply">
+            <summary>Balas</summary>
+            <CommentForm projectId={projectId} sort={sort} parentId={node.id} compact />
+          </details>
+        )
+      }
+
+      {
+        node.can_delete && (
+          <form method="post" action={`/api/comments/${node.id}/delete`} data-confirm="Hapus komentar ini?" class="comment-del">
+            <input type="hidden" name="project_id" value={projectId} />
+            <button class="cnode-text-btn" type="submit" aria-label="Hapus komentar">Hapus</button>
+          </form>
+        )
+      }
+    </div>
+
+    {
+      node.children.length > 0 && (
+        <div class:list={['cnode-children', depth >= FLAT_FROM && 'cnode-flat']}>
+          {node.children.map((child) => (
+            <CommentNode node={child} depth={depth + 1} projectId={projectId} sort={sort} />
+          ))}
+        </div>
+      )
+    }
+  </div>
+</details>

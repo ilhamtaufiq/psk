@@ -1,4 +1,4 @@
-// Lampiran pada komentar: pilih berkas, seret ke formulir, atau tempel gambar dari clipboard.
+// Lampiran pada komentar dan balasan: pilih berkas, seret ke formulir, atau tempel gambar dari clipboard.
 
 const MAX_FILES = 5;
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -9,8 +9,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const form = document.querySelector<HTMLFormElement>('form[data-attach-form]');
-if (form) {
+function setupForm(form: HTMLFormElement) {
   const input = form.querySelector<HTMLInputElement>('[data-attach-input]');
   const list = form.querySelector<HTMLUListElement>('[data-attach-list]');
   const note = form.querySelector<HTMLElement>('[data-attach-note]');
@@ -85,9 +84,7 @@ if (form) {
     sync();
   };
 
-  input?.addEventListener('change', () => {
-    add(Array.from(input.files ?? []));
-  });
+  input?.addEventListener('change', () => add(Array.from(input.files ?? [])));
 
   list?.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-remove]');
@@ -97,7 +94,7 @@ if (form) {
     sync();
   });
 
-  // Gambar atau berkas yang ditempel di kolom komentar ikut dilampirkan; teks tetap ditempel biasa.
+  // Gambar atau berkas yang ditempel ikut dilampirkan; teks tetap ditempel biasa.
   textarea?.addEventListener('paste', (event) => {
     const files = Array.from(event.clipboardData?.files ?? []);
     if (files.length === 0) return;
@@ -126,3 +123,5 @@ if (form) {
     }
   });
 }
+
+document.querySelectorAll<HTMLFormElement>('form[data-attach-form]').forEach(setupForm);

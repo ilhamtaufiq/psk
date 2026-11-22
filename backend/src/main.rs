@@ -138,6 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 )),
         )
         .route("/api/comment-attachments/{id}", get(comments::download))
+        .route("/api/comments/{id}/vote", post(comments::vote))
         .route("/api/comments/{id}", axum::routing::delete(comments::delete))
         .route(
             "/api/projects/{id}/members",

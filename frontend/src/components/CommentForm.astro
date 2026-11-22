@@ -1,0 +1,46 @@
+---
+import Icon from './Icon.astro';
+
+// Formulir komentar utama atau balasan. Lampiran bisa dipilih, diseret, atau ditempel.
+interface Props {
+  projectId: string;
+  sort: string;
+  parentId?: string;
+  compact?: boolean;
+}
+
+const { projectId, sort, parentId, compact = false } = Astro.props;
+---
+
+<form
+  method="post"
+  action={`/api/projects/${projectId}/comments`}
+  enctype="multipart/form-data"
+  class:list={['card', 'comment-form', compact && 'comment-form-compact']}
+  data-attach-form
+>
+  {parentId && <input type="hidden" name="parent_id" value={parentId} />}
+  <input type="hidden" name="sort" value={sort} />
+  <label class="field">
+    <span class="sr-only">{parentId ? 'Tulis balasan' : 'Tulis komentar'}</span>
+    <textarea
+      name="body"
+      rows={compact ? 2 : 3}
+      maxlength="2000"
+      placeholder={parentId ? 'Tulis balasan…' : 'Tulis masukan, catatan, atau pertanyaan untuk project ini… Gambar bisa ditempel (Ctrl+V).'}
+    ></textarea>
+  </label>
+  <div class="attach-tools">
+    <label class="btn ghost small attach-pick">
+      <Icon name="paperclip" />
+      <span>Lampirkan berkas</span>
+      <input type="file" name="attachment" multiple class="sr-only" data-attach-input />
+    </label>
+    <span class="muted small">Maks. 5 berkas, 10 MB per berkas</span>
+  </div>
+  <ul class="attach-picked" data-attach-list hidden></ul>
+  <p class="attach-note alert error" data-attach-note role="alert" hidden></p>
+  <div class="form-actions">
+    <button class="btn primary" type="submit" data-busy="Mengirim…">{parentId ? 'Balas' : 'Kirim komentar'}</button>
+  </div>
+</form>
