@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Proyek Selepas Kerja — mobile-first
+   Project Selepas Kerja — mobile-first
    Gaya dasar untuk layar kecil; tablet (≥640px) dan desktop (≥900px)
    hanya menambah atau menyusun ulang layout.
    ========================================================================== */
@@ -2088,7 +2088,7 @@ a.kpi:hover {
     margin: 16mm 14mm 20mm;
     /* Footer dan nomor halaman di setiap halaman (didukung Chromium dan Chrome-based browser) */
     @bottom-left {
-      content: 'Proyek Selepas Kerja';
+      content: 'Project Selepas Kerja';
       font-size: 7.5pt;
       color: #667085;
     }

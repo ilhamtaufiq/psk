@@ -95,7 +95,7 @@ async fn notify_invite(state: &AppState, project_id: &str, inviter: &str, member
     let url = format!("{}/projects/{}", state.app_url, project_id);
     let subject = format!("Anda diundang ke project \"{project_name}\"");
     let body = format!(
-        "Halo {},\n\n{inviter} mengundang Anda ke project \"{project_name}\" sebagai {role}.\n\nBuka project:\n{url}\n\nSalam,\nProyek Selepas Kerja\n",
+        "Halo {},\n\n{inviter} mengundang Anda ke project \"{project_name}\" sebagai {role}.\n\nBuka project:\n{url}\n\nSalam,\nProject Selepas Kerja\n",
         member.name
     );
     let to = member.email.clone();

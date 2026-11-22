@@ -32,7 +32,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
     <script is:inline>try{if(sessionStorage.getItem("psk-splash")){document.documentElement.classList.add("splash-done")}}catch(e){}</script>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <title>{title} · Proyek Selepas Kerja</title>
+    <title>{title} · Project Selepas Kerja</title>
   </head>
   <body>
     <div class="nav-progress" aria-hidden="true"></div>
@@ -43,7 +43,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
       <div class="container bar">
         <a href={user ? '/projects' : '/login'} class="brand">
           <img class="brand-logo" src="/logo.svg" width="30" height="30" alt="" />
-          <span>Proyek Selepas Kerja</span>
+          <span>Project Selepas Kerja</span>
         </a>
 
         {

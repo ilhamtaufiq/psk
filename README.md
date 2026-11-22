@@ -1,4 +1,4 @@
-# Proyek Selepas Kerja
+# Project Selepas Kerja
 
 Aplikasi web manajemen proyek sederhana: autentikasi, daftar & pengelolaan proyek, detail proyek, dan berkas proyek.
 
@@ -121,7 +121,7 @@ Email dikirim lewat SMTP. Semua pengaturan diisi sebagai environment variable di
 | `SMTP_TLS` | `starttls` | `starttls`, `tls` (SMTPS), atau `none` (hanya untuk server lokal). |
 | `SMTP_USERNAME` | `user@contoh.com` | Kosongkan jika server tidak memerlukan login. |
 | `SMTP_PASSWORD` | | Simpan sebagai secret di Coolify. Jangan ditulis di kode. |
-| `SMTP_FROM` | `Proyek Selepas Kerja <noreply@contoh.com>` | Wajib jika `SMTP_HOST` diisi. |
+| `SMTP_FROM` | `Project Selepas Kerja <noreply@contoh.com>` | Wajib jika `SMTP_HOST` diisi. |
 | `APP_URL` | `https://psk.cianjur.space` | Dipakai untuk tautan di email. |
 
 Email yang dikirim saat ini: pemberitahuan undangan ke proyek.

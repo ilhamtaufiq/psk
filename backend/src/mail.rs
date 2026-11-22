@@ -125,7 +125,7 @@ pub async fn cli_send_test(to: Option<&str>) -> i32 {
     match send(
         &cfg,
         to,
-        "Uji SMTP Proyek Selepas Kerja",
+        "Uji SMTP Project Selepas Kerja",
         "Ini email uji. Jika Anda menerimanya, pengaturan SMTP sudah benar.",
     )
     .await
