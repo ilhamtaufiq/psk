@@ -30,6 +30,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <!-- Splash hanya sekali per tab; kelas ini dipasang sebelum render agar tidak berkedip -->
     <script is:inline>try{if(sessionStorage.getItem("psk-splash")){document.documentElement.classList.add("splash-done")}}catch(e){}</script>
+    <script is:inline>try{var t=localStorage.getItem("psk-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}</script>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <title>{title} · Project Selepas Kerja</title>
@@ -46,9 +47,13 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
           <span>Project Selepas Kerja</span>
         </a>
 
+        <div class="bar-actions">
         {
           user && (
             <>
+              <button class="icon-btn topbar-btn" type="button" data-open-palette aria-label="Cari project atau buka halaman (Ctrl+K)" title="Cari (Ctrl+K)">
+                <Icon name="search" />
+              </button>
               <nav class="nav-links" aria-label="Utama">
                 <a href="/dashboard" aria-current={isDash ? 'page' : undefined}>Dashboard</a>
                 <a href="/projects" aria-current={isList ? 'page' : undefined}>Project</a>
@@ -82,6 +87,12 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
             </>
           )
         }
+        <button class="icon-btn topbar-btn theme-btn" type="button" data-theme-toggle data-mode="system" aria-label="Tema: sistem. Klik untuk ganti." title="Ganti tema">
+          <span data-for="system"><Icon name="monitor" /></span>
+          <span data-for="light"><Icon name="sun" /></span>
+          <span data-for="dark"><Icon name="moon" /></span>
+        </button>
+        </div>
       </div>
     </header>
 
@@ -107,6 +118,24 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
         </nav>
       )
     }
+
+    {user && (
+      <dialog class="palette" aria-label="Cari project dan buka halaman">
+        <div class="palette-box">
+          <label class="palette-field">
+            <Icon name="search" />
+            <input type="search" placeholder="Cari project atau halaman…" autocomplete="off" aria-controls="palette-list" aria-autocomplete="list" data-palette-input />
+            <kbd>Esc</kbd>
+          </label>
+          <ul class="palette-list" id="palette-list" role="listbox" aria-label="Hasil pencarian" data-palette-list></ul>
+          <div class="palette-foot">
+            <span><kbd>↑</kbd><kbd>↓</kbd> pilih</span>
+            <span><kbd>Enter</kbd> buka</span>
+            <span><kbd>/</kbd> cari cepat</span>
+          </div>
+        </div>
+      </dialog>
+    )}
 
     <div class="toast" role="status" aria-live="polite" hidden></div>
 

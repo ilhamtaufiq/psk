@@ -51,6 +51,39 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
     </div>
   </section>
 
+  {data.overdue > 0 || data.due_soon.length > 0 ? (
+    <section class="attention" aria-labelledby="h-attention">
+      <div class="attention-head">
+        <h2 id="h-attention">Perlu perhatian</h2>
+        <span class="muted small">{data.overdue} terlambat · {data.due_soon.length} segera jatuh tempo</span>
+      </div>
+      <ul class="attention-list">
+        {data.due_soon.map((p) => {
+          const d = deadlineOf(p.due_date, p.status);
+          return (
+            <li>
+              <a href={`/projects/${p.id}`} class={`attention-item tone-${d?.tone ?? 'ok'}`}>
+                <span class="attention-name">{p.name}</span>
+                <span class="attention-meta">
+                  {d && <span class={`deadline ${d.tone}`}>{d.text}</span>}
+                  <StatusBadge status={p.status} />
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ) : (
+    <section class="attention attention-ok">
+      <span class="attention-ico"><Icon name="check" /></span>
+      <div>
+        <h2>Semua tenggat aman</h2>
+        <p class="muted small">Tidak ada project yang terlambat atau jatuh tempo dalam 7 hari ke depan.</p>
+      </div>
+    </section>
+  )}
+
   <section class="kpis" aria-label="Ringkasan angka">
     <a href="/projects" class="card kpi">
       <span class="kpi-label">Total project</span>
@@ -151,28 +184,6 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
       </div>
     </section>
 
-    <section class="card dash-card" aria-labelledby="h-due">
-      <h2 id="h-due">Tenggat terdekat</h2>
-      {
-        data.due_soon.length === 0 ? (
-          <p class="muted small">Tidak ada tenggat dalam 7 hari ke depan.</p>
-        ) : (
-          <ul class="mini-list">
-            {data.due_soon.map((p) => {
-              const d = deadlineOf(p.due_date, p.status);
-              return (
-                <li>
-                  <a href={`/projects/${p.id}`} class="mini-link">
-                    <span class="mini-title">{p.name}</span>
-                    {d && <span class={`deadline ${d.tone}`}>{d.text}</span>}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        )
-      }
-    </section>
 
     <section class="card dash-card dash-wide" aria-labelledby="h-recent">
       <div class="dash-head">

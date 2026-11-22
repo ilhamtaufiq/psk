@@ -3787,3 +3787,314 @@ a.kpi:hover {
   font-weight: 600;
   color: var(--accent);
 }
+
+/* ==========================================================================
+   Tema manual (tombol di topbar) — menimpa preferensi sistem bila dipilih
+   ========================================================================== */
+:root[data-theme='dark'] {
+  --bg: #0c0f16;
+  --surface: #141924;
+  --surface-2: #1b2130;
+  --text: #e9ebf2;
+  --muted: #9ba3b4;
+  --border: #262e3f;
+  --accent: #8b8cf8;
+  --accent-hover: #a5a6fa;
+  --accent-text: #0c0f16;
+  --accent-soft: #232750;
+  --danger: #f97066;
+  --danger-soft: #3b1d1f;
+  --ok: #47cd89;
+  --ok-soft: #14301f;
+  --warn: #fdb022;
+  --warn-soft: #362a12;
+  --shadow-lg: 0 10px 30px -12px rgb(0 0 0 / 0.6);
+  --ring: 0 0 0 3px rgb(139 140 248 / 0.35);
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+/* ---------- Bagian kanan topbar ---------- */
+.bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.topbar-btn {
+  width: 40px;
+  height: 40px;
+}
+
+.theme-btn span[data-for] {
+  display: none;
+}
+
+.theme-btn[data-mode='system'] span[data-for='system'],
+.theme-btn[data-mode='light'] span[data-for='light'],
+.theme-btn[data-mode='dark'] span[data-for='dark'] {
+  display: inline-grid;
+}
+
+.topbar-btn:hover {
+  color: var(--accent);
+}
+
+kbd {
+  font-family: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 600;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* ---------- Palet perintah ---------- */
+.palette {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  width: min(580px, calc(100vw - 24px));
+  max-height: min(72vh, 560px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  overflow: visible;
+}
+
+.palette::backdrop {
+  background: rgb(12 15 22 / 0.45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.palette-box {
+  display: flex;
+  flex-direction: column;
+  max-height: min(72vh, 560px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.palette-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.palette-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  outline: none;
+  box-shadow: none;
+}
+
+.palette-field input::placeholder {
+  color: var(--muted);
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.palette-item[aria-selected='true'] {
+  background: var(--accent-soft);
+}
+
+.palette-label {
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-hint {
+  flex-shrink: 1;
+  max-width: 55%;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-empty {
+  padding: 18px 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.palette-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.palette-foot kbd {
+  margin-right: 3px;
+}
+
+@media (min-width: 900px) {
+  .palette {
+    max-height: min(70vh, 560px);
+  }
+}
+
+/* ---------- Perlu perhatian (dashboard) ---------- */
+.attention {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.attention-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+}
+
+.attention-head h2 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.attention-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attention-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border-left: 4px solid var(--border);
+  color: var(--text);
+}
+
+.attention-item:hover {
+  text-decoration: none;
+  filter: brightness(0.98);
+}
+
+.attention-item.tone-late {
+  border-left-color: var(--danger);
+}
+
+.attention-item.tone-soon {
+  border-left-color: var(--warn);
+}
+
+.attention-item.tone-ok,
+.attention-item.tone-done {
+  border-left-color: var(--ok);
+}
+
+.attention-name {
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attention-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.attention-ok {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--ok-soft);
+  border-color: transparent;
+}
+
+.attention-ok h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ok);
+}
+
+.attention-ok p {
+  margin: 2px 0 0;
+}
+
+.attention-ico {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ok);
+}
+
+@media (min-width: 900px) {
+  .attention-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

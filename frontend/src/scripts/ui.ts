@@ -195,3 +195,208 @@ document.addEventListener('change', (event) => {
   };
   xhr.send(data);
 });
+
+// ---------- Tema: sistem → terang → gelap ----------
+const THEME_KEY = 'psk-theme';
+const THEME_MODES = ['system', 'light', 'dark'];
+const THEME_LABELS: Record<string, string> = { system: 'sistem', light: 'terang', dark: 'gelap' };
+const themeBtn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+
+function currentTheme(): string {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'light' || saved === 'dark' ? saved : 'system';
+  } catch (e) {
+    return 'system';
+  }
+}
+
+function applyTheme(mode: string) {
+  const root = document.documentElement;
+  if (mode === 'system') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', mode);
+  try {
+    if (mode === 'system') localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, mode);
+  } catch (e) {
+    /* penyimpanan diblokir: tema tetap berlaku untuk halaman ini */
+  }
+  if (themeBtn) {
+    const label = THEME_LABELS[mode];
+    themeBtn.dataset.mode = mode;
+    themeBtn.setAttribute('aria-label', `Tema: ${label}. Klik untuk ganti.`);
+    themeBtn.title = `Tema: ${label}`;
+  }
+}
+
+function cycleTheme() {
+  const next = THEME_MODES[(THEME_MODES.indexOf(currentTheme()) + 1) % THEME_MODES.length];
+  applyTheme(next);
+  showToast(`Tema ${THEME_LABELS[next]}`, 'ok');
+}
+
+applyTheme(currentTheme());
+themeBtn?.addEventListener('click', cycleTheme);
+
+// ---------- Palet perintah (Ctrl/⌘+K, atau "/") ----------
+type PaletteItem = { label: string; hint: string; href?: string; action?: 'theme' };
+
+const palette = document.querySelector<HTMLDialogElement>('dialog.palette');
+const paletteInput = palette?.querySelector<HTMLInputElement>('[data-palette-input]') ?? null;
+const paletteList = palette?.querySelector<HTMLUListElement>('[data-palette-list]') ?? null;
+
+const PAGES: PaletteItem[] = [
+  { label: 'Dashboard', hint: 'Halaman', href: '/dashboard' },
+  { label: 'Daftar project', hint: 'Halaman', href: '/projects' },
+  { label: 'Project baru', hint: 'Halaman', href: '/projects/new' },
+  { label: 'Laporan', hint: 'Halaman', href: '/laporan' },
+  { label: 'Jenis project', hint: 'Halaman', href: '/jenis' },
+  { label: 'Ganti tema', hint: 'Aksi', action: 'theme' },
+];
+
+let projectItems: PaletteItem[] | null = null;
+let projectsLoading: Promise<void> | null = null;
+let visibleItems: PaletteItem[] = [];
+let activeIndex = 0;
+
+function loadProjects(): Promise<void> {
+  if (projectItems) return Promise.resolve();
+  if (!projectsLoading) {
+    projectsLoading = fetch('/api/palette', { headers: { accept: 'application/json' }, credentials: 'same-origin' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((list: { id: string; name: string; project_type_label: string; status_label: string }[]) => {
+        projectItems = list.map((p) => ({
+          label: p.name,
+          hint: `${p.project_type_label} · ${p.status_label}`,
+          href: `/projects/${p.id}`,
+        }));
+      })
+      .catch(() => {
+        projectItems = [];
+      });
+  }
+  return projectsLoading;
+}
+
+function renderPalette() {
+  if (!paletteList || !paletteInput) return;
+  const query = paletteInput.value.trim().toLowerCase();
+  const pool = [...PAGES, ...(projectItems ?? [])];
+  visibleItems = (query ? pool.filter((i) => `${i.label} ${i.hint}`.toLowerCase().includes(query)) : pool).slice(0, 30);
+  activeIndex = Math.min(activeIndex, Math.max(visibleItems.length - 1, 0));
+
+  const rows: HTMLElement[] = visibleItems.map((item, i) => {
+    const li = document.createElement('li');
+    li.id = `palette-opt-${i}`;
+    li.className = 'palette-item';
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', String(i === activeIndex));
+    li.dataset.index = String(i);
+    const name = document.createElement('span');
+    name.className = 'palette-label';
+    name.textContent = item.label;
+    const hint = document.createElement('span');
+    hint.className = 'palette-hint';
+    hint.textContent = item.hint;
+    li.append(name, hint);
+    return li;
+  });
+
+  if (!rows.length) {
+    const empty = document.createElement('li');
+    empty.className = 'palette-empty';
+    empty.textContent = projectItems === null && projectsLoading ? 'Memuat project…' : 'Tidak ada hasil.';
+    rows.push(empty);
+  }
+  paletteList.replaceChildren(...rows);
+  paletteInput.setAttribute('aria-activedescendant', visibleItems.length ? `palette-opt-${activeIndex}` : '');
+  paletteList.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+}
+
+function openPalette() {
+  if (!palette || !paletteInput || palette.open) return;
+  paletteInput.value = '';
+  activeIndex = 0;
+  palette.showModal();
+  renderPalette();
+  paletteInput.focus();
+  loadProjects().then(() => {
+    if (palette.open) renderPalette();
+  });
+}
+
+function runItem(item: PaletteItem | undefined) {
+  if (!item || !palette) return;
+  if (item.action === 'theme') {
+    palette.close();
+    cycleTheme();
+    return;
+  }
+  if (!item.href) return;
+  if (new URL(item.href, location.href).pathname === location.pathname) {
+    palette.close();
+    return;
+  }
+  startProgress();
+  location.href = item.href;
+}
+
+paletteInput?.addEventListener('input', () => {
+  activeIndex = 0;
+  renderPalette();
+});
+
+paletteInput?.addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    const count = visibleItems.length;
+    if (!count) return;
+    activeIndex = (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + count) % count;
+    renderPalette();
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    runItem(visibleItems[activeIndex]);
+  } else if (event.key === 'Escape' && paletteInput.value) {
+    // Esc pertama menghapus kueri (perilaku input pencarian); Esc berikutnya menutup palet.
+    event.preventDefault();
+    paletteInput.value = '';
+    activeIndex = 0;
+    renderPalette();
+  }
+});
+
+paletteList?.addEventListener('click', (event) => {
+  const row = (event.target as HTMLElement).closest<HTMLElement>('[data-index]');
+  if (row) runItem(visibleItems[Number(row.dataset.index)]);
+});
+
+palette?.addEventListener('click', (event) => {
+  // Klik di area gelap di luar kotak palet menutupnya.
+  if (event.target === palette) palette.close();
+});
+
+palette?.addEventListener('close', () => {
+  paletteInput?.setAttribute('aria-activedescendant', '');
+});
+
+document.addEventListener('click', (event) => {
+  if ((event.target as Element).closest('[data-open-palette]')) openPalette();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (!palette) return;
+  const key = event.key.toLowerCase();
+  if ((event.ctrlKey || event.metaKey) && key === 'k') {
+    event.preventDefault();
+    if (palette.open) palette.close();
+    else openPalette();
+    return;
+  }
+  if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !palette.open) {
+    const target = event.target as HTMLElement;
+    const typing = target.matches('input, textarea, select, [contenteditable="true"]');
+    if (typing) return;
+    event.preventDefault();
+    openPalette();
+  }
+});
