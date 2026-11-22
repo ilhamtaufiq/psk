@@ -1,9 +1,13 @@
+# syntax=docker/dockerfile:1
 # Tahap build: pasang dependensi dan bangun Astro SSR
 FROM node:22-alpine AS build
 WORKDIR /app
 RUN npm install -g pnpm@10
+# Dependensi hanya dipasang ulang bila package.json atau pnpm-lock.yaml berubah.
+# Store pnpm disimpan di cache BuildKit, jadi paket yang sudah pernah diunduh tidak diambil lagi.
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build \
     && pnpm prune --prod
