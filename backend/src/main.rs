@@ -14,6 +14,7 @@ mod profile;
 mod projects;
 mod report;
 mod requirements;
+mod tickets;
 mod types;
 
 use std::{path::PathBuf, str::FromStr};
@@ -139,6 +140,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route("/api/comment-attachments/{id}", get(comments::download))
         .route("/api/comments/{id}/vote", post(comments::vote))
+        .route(
+            "/api/projects/{id}/tickets",
+            get(tickets::list).post(tickets::create),
+        )
+        .route(
+            "/api/tickets/{id}",
+            put(tickets::update).delete(tickets::delete),
+        )
         .route("/api/comments/{id}", axum::routing::delete(comments::delete))
         .route(
             "/api/projects/{id}/members",

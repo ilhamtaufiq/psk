@@ -4697,3 +4697,82 @@ a.pager-btn:hover {
   border: 0;
   padding: 0;
 }
+
+/* ---------- Tiket project ---------- */
+.ticket-new {
+  margin-bottom: 14px;
+}
+
+.ticket-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ticket {
+  display: grid;
+  gap: 8px;
+}
+
+.ticket-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ticket-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.ticket-badge.st-open { background: var(--accent-soft); color: var(--accent); }
+.ticket-badge.st-in_progress { background: var(--warn-soft); color: var(--warn); }
+.ticket-badge.st-done { background: var(--ok-soft); color: var(--ok); }
+.ticket-badge.pr-high { background: var(--danger-soft); color: var(--danger); }
+
+.ticket-title {
+  font-size: 1.02rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.ticket-desc {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ticket-edit {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.ticket-del {
+  margin: 0;
+}
+
+.ticket-manage > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--accent);
+  font-weight: 650;
+  font-size: var(--fs-sm);
+  padding: 6px 0;
+}
+
+.ticket-manage > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ticket-manage[open] > summary {
+  margin-bottom: 6px;
+}

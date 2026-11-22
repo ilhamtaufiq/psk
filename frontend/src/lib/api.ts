@@ -80,6 +80,37 @@ export interface CommentAttachment {
   size_bytes: number;
 }
 
+export type TicketStatus = 'open' | 'in_progress' | 'done';
+export type TicketPriority = 'low' | 'normal' | 'high';
+
+export interface Ticket {
+  id: string;
+  title: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  assignee_id: string | null;
+  assignee_name: string | null;
+  created_by: string;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+  can_manage: boolean;
+  can_delete: boolean;
+}
+
+export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
+  open: 'Terbuka',
+  in_progress: 'Dikerjakan',
+  done: 'Selesai',
+};
+
+export const TICKET_PRIORITY_LABELS: Record<TicketPriority, string> = {
+  low: 'Rendah',
+  normal: 'Normal',
+  high: 'Tinggi',
+};
+
 export interface ProjectComment {
   id: string;
   author_name: string;

@@ -10,6 +10,11 @@ import {
   type ProjectField,
   type MemberList,
   type ProjectComment,
+  type Ticket,
+  type TicketPriority,
+  type TicketStatus,
+  TICKET_PRIORITY_LABELS,
+  TICKET_STATUS_LABELS,
   type Requirement,
 } from '../../../lib/api';
 import { deadlineOf, fileKind, formatBytes, formatDate, timeProgress } from '../../../lib/format';
@@ -31,17 +36,19 @@ let requirements: Requirement[] = [];
 let fields: ProjectField[] = [];
 let members: MemberList | null = null;
 let comments: ProjectComment[] = [];
+let tickets: Ticket[] = [];
 const sort = Astro.url.searchParams.get('sort') === 'new' ? 'new' : 'top';
 let tree: ReturnType<typeof buildTree> = [];
 
 try {
-  [project, files, requirements, fields, members, comments] = await Promise.all([
+  [project, files, requirements, fields, members, comments, tickets] = await Promise.all([
     api<Project>(`/api/projects/${id}`, { token }),
     api<ProjectFile[]>(`/api/projects/${id}/files`, { token }),
     api<Requirement[]>(`/api/projects/${id}/requirements`, { token }),
     api<ProjectField[]>(`/api/projects/${id}/fields`, { token }),
     api<MemberList>(`/api/projects/${id}/members`, { token }),
     api<ProjectComment[]>(`/api/projects/${id}/comments`, { token }),
+    api<Ticket[]>(`/api/projects/${id}/tickets`, { token }),
   ]);
   tree = buildTree(comments, sort);
 } catch (err) {
@@ -49,6 +56,12 @@ try {
   Astro.response.status = 404;
 }
 
+const ticketParam = Astro.url.searchParams.get('status');
+const ticketFilter: 'all' | TicketStatus =
+  ticketParam === 'open' || ticketParam === 'in_progress' || ticketParam === 'done' ? ticketParam : 'all';
+const shownTickets = ticketFilter === 'all' ? tickets : tickets.filter((t) => t.status === ticketFilter);
+const countOf = (status: TicketStatus) => tickets.filter((t) => t.status === status).length;
+const assignees = members ? [members.owner, ...members.members] : [];
 const deadline = project ? deadlineOf(project.due_date, project.status) : null;
 const progress = project ? timeProgress(project.start_date, project.due_date, project.status) : null;
 
@@ -150,6 +163,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           <a href="#kelengkapan">Kelengkapan</a>
           <a href="#berkas">Berkas</a>
           <a href="#anggota">Anggota</a>
+          <a href="#tiket">Tiket</a>
           <a href="#komentar">Komentar</a>
           <a href="#deskripsi">Deskripsi</a>
         </nav>
@@ -580,6 +594,108 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               </ul>
             )
           }
+        </section>
+
+        <section class="section" id="tiket" aria-labelledby="h-tiket">
+          <div class="section-head">
+            <h2 id="h-tiket">Tiket</h2>
+            <span class="muted small">{countOf('open')} terbuka · {countOf('done')} selesai</span>
+          </div>
+
+          <form method="post" action={`/api/projects/${id}/tickets`} class="card form ticket-new">
+            <label class="field">
+              <span>Judul tiket <span class="req">*</span></span>
+              <input name="title" required maxlength="150" placeholder="Mis. Foto lokasi belum diunggah" />
+            </label>
+            <label class="field">
+              <span>Deskripsi</span>
+              <textarea name="description" rows="2" maxlength="2000" placeholder="Apa masalahnya, dan apa yang diharapkan?"></textarea>
+            </label>
+            <label class="field">
+              <span>Prioritas</span>
+              <select name="priority">
+                {(Object.keys(TICKET_PRIORITY_LABELS) as TicketPriority[]).map((p) => (
+                  <option value={p} selected={p === 'normal'}>{TICKET_PRIORITY_LABELS[p]}</option>
+                ))}
+              </select>
+            </label>
+            <div class="form-actions">
+              <button class="btn primary" type="submit" data-busy="Membuat…">Buat tiket</button>
+            </div>
+          </form>
+
+          <nav class="comment-sort" aria-label="Filter tiket">
+            <a href={`/projects/${id}#tiket`} aria-current={ticketFilter === 'all' ? 'page' : undefined}>Semua ({tickets.length})</a>
+            <a href={`/projects/${id}?status=open#tiket`} aria-current={ticketFilter === 'open' ? 'page' : undefined}>Terbuka ({countOf('open')})</a>
+            <a href={`/projects/${id}?status=in_progress#tiket`} aria-current={ticketFilter === 'in_progress' ? 'page' : undefined}>Dikerjakan ({countOf('in_progress')})</a>
+            <a href={`/projects/${id}?status=done#tiket`} aria-current={ticketFilter === 'done' ? 'page' : undefined}>Selesai ({countOf('done')})</a>
+          </nav>
+
+          {shownTickets.length === 0 ? (
+            <p class="card muted comment-empty">Belum ada tiket di daftar ini.</p>
+          ) : (
+            <ul class="ticket-list">
+              {shownTickets.map((t) => (
+                <li class="card ticket" id={`t-${t.id}`}>
+                  <div class="ticket-top">
+                    <span class={`ticket-badge st-${t.status}`}>{TICKET_STATUS_LABELS[t.status]}</span>
+                    <span class={`ticket-badge pr-${t.priority}`}>{TICKET_PRIORITY_LABELS[t.priority]}</span>
+                  </div>
+                  <h3 class="ticket-title">{t.title}</h3>
+                  {t.description && <p class="ticket-desc">{t.description}</p>}
+                  <p class="muted small">
+                    Dibuat {t.created_by_name} · {formatDate(t.created_at, true)}
+                    {t.assignee_name ? ` · PJ: ${t.assignee_name}` : ''}
+                  </p>
+
+                  {t.can_manage && (
+                    <details class="ticket-manage">
+                    <summary>Kelola tiket</summary>
+                    <form method="post" action={`/api/tickets/${t.id}/update`} class="ticket-edit">
+                      <input type="hidden" name="project_id" value={id} />
+                      <input type="hidden" name="filter" value={ticketFilter} />
+                      <label class="field">
+                        <span>Status</span>
+                        <select name="status">
+                          {(Object.keys(TICKET_STATUS_LABELS) as TicketStatus[]).map((st) => (
+                            <option value={st} selected={st === t.status}>{TICKET_STATUS_LABELS[st]}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label class="field">
+                        <span>Prioritas</span>
+                        <select name="priority">
+                          {(Object.keys(TICKET_PRIORITY_LABELS) as TicketPriority[]).map((p) => (
+                            <option value={p} selected={p === t.priority}>{TICKET_PRIORITY_LABELS[p]}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label class="field">
+                        <span>Penanggung jawab</span>
+                        <select name="assignee_id">
+                          <option value="">Belum ditentukan</option>
+                          {assignees.map((a) => (
+                            <option value={a.user_id} selected={a.user_id === t.assignee_id}>{a.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <div class="form-actions">
+                        <button class="btn ghost small" type="submit" data-busy="Menyimpan…">Simpan</button>
+                      </div>
+                    </form>
+                    </details>
+                  )}
+
+                  {t.can_delete && (
+                    <form method="post" action={`/api/tickets/${t.id}/delete`} data-confirm="Hapus tiket ini?" class="ticket-del">
+                      <input type="hidden" name="project_id" value={id} />
+                      <button class="cnode-text-btn" type="submit">Hapus tiket</button>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section class="section" id="komentar" aria-labelledby="h-komentar">

@@ -53,7 +53,7 @@ export function okUrl(path: string, message: string): string {
  * Hanya dua anchor yang diizinkan.
  */
 export function backTo(projectId: string, anchor: FormDataEntryValue | null): string {
-  const safe = ['#informasi', '#kelengkapan', '#berkas', '#anggota', '#komentar'].includes(String(anchor)) ? String(anchor) : '';
+  const safe = ['#informasi', '#kelengkapan', '#berkas', '#anggota', '#komentar', '#tiket'].includes(String(anchor)) ? String(anchor) : '';
   return `/projects/${projectId}${safe}`;
 }
 
