@@ -4191,3 +4191,95 @@ a.pager-btn:hover {
     grid-column: auto;
   }
 }
+
+/* ---------- Animasi halaman masuk ---------- */
+@keyframes psk-pop {
+  0% { opacity: 0; transform: scale(0.6) rotate(-8deg); }
+  60% { opacity: 1; transform: scale(1.06) rotate(2deg); }
+  100% { transform: none; }
+}
+
+@keyframes psk-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes psk-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.12); }
+}
+
+@keyframes psk-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+
+@keyframes psk-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.auth-logo-stage {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  isolation: isolate;
+  flex-shrink: 0;
+}
+
+.auth-logo-stage::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 65%);
+  z-index: -1;
+  animation: psk-glow 3.2s ease-in-out infinite;
+}
+
+.auth-aside-stage::before {
+  inset: -10px;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.3) 0%, transparent 65%);
+}
+
+.auth-logo-art {
+  transform-origin: 50% 80%;
+  animation: psk-pop 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
+    psk-float 4s ease-in-out 0.75s infinite;
+  cursor: pointer;
+}
+
+.auth-logo-art:hover,
+.auth-logo-art:focus-visible {
+  animation: psk-wiggle 0.6s ease-in-out;
+}
+
+.auth-points li {
+  animation: psk-rise 0.55s ease both;
+  animation-delay: calc(var(--i, 0) * 120ms + 350ms);
+}
+
+.auth-card {
+  animation: psk-rise 0.6s ease 0.15s both;
+}
+
+.auth-head > div {
+  animation: psk-rise 0.6s ease 0.1s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-logo-stage::before,
+  .auth-logo-art,
+  .auth-logo-art:hover,
+  .auth-points li,
+  .auth-card,
+  .auth-head > div {
+    animation: none !important;
+  }
+}
+
+/* Cahaya di belakang logo tidak boleh membuat halaman bisa digeser ke samping. */
+.auth-split {
+  overflow-x: clip;
+}

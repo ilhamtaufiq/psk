@@ -14,11 +14,13 @@ const features = [
 <Layout title="Masuk">
   <div class="auth-split">
     <aside class="auth-aside" aria-hidden="true">
-      <img class="auth-aside-art" src="/logo.svg" width="112" height="112" alt="" />
+      <span class="auth-logo-stage auth-aside-stage">
+        <img class="auth-logo-art auth-aside-art" src="/logo.svg" width="112" height="112" alt="" />
+      </span>
       <h2>Kerja lebih rapi, pulang lebih tenang.</h2>
       <ul class="auth-points">
-        {features.map((f) => (
-          <li>
+        {features.map((f, i) => (
+          <li style={`--i:${i}`}>
             <span class="auth-point-ico"><Icon name={f.icon} /></span>
             <span>{f.text}</span>
           </li>
@@ -28,7 +30,9 @@ const features = [
 
     <section class="auth-main">
       <header class="auth-head">
-        <img class="auth-logo" src="/logo.svg" width="56" height="56" alt="" />
+        <span class="auth-logo-stage">
+          <img class="auth-logo auth-logo-art" src="/logo.svg" width="56" height="56" alt="" />
+        </span>
         <div>
           <h1>Selamat datang kembali</h1>
           <p class="sub">Masuk untuk melanjutkan project dan berkas Anda.</p>
