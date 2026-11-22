@@ -10,6 +10,7 @@ mod files;
 mod health;
 mod mail;
 mod members;
+mod profile;
 mod projects;
 mod report;
 mod requirements;
@@ -108,6 +109,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::me))
+        .route("/api/profile", put(profile::update))
+        .route("/api/profile/password", put(profile::change_password))
         .route("/api/dashboard", get(dashboard::summary))
         .route("/api/reports/projects", get(report::json))
         .route("/api/reports/projects.csv", get(report::csv))
@@ -128,8 +131,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(
             "/api/projects/{id}/comments",
-            get(comments::list).post(comments::create),
+            get(comments::list)
+                .post(comments::create)
+                .layer(DefaultBodyLimit::max(
+                    comments::MAX_ATTACHMENTS * comments::MAX_ATTACHMENT_BYTES + 1024 * 1024,
+                )),
         )
+        .route("/api/comment-attachments/{id}", get(comments::download))
         .route("/api/comments/{id}", axum::routing::delete(comments::delete))
         .route(
             "/api/projects/{id}/members",

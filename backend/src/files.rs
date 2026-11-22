@@ -294,7 +294,7 @@ fn header_value(value: &str, fallback: &'static str) -> HeaderValue {
 }
 
 /// Header `Content-Disposition` dengan nama ASCII fallback dan `filename*` (RFC 5987) untuk nama Unicode.
-fn content_disposition(name: &str, inline: bool) -> HeaderValue {
+pub(crate) fn content_disposition(name: &str, inline: bool) -> HeaderValue {
     let kind = if inline { "inline" } else { "attachment" };
     let ascii: String = name
         .chars()

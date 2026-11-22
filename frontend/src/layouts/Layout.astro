@@ -72,6 +72,10 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
                 <div class="account-menu">
                   <p class="account-name">{user.name}</p>
                   <p class="account-mail">{user.email}</p>
+                  <a class="btn ghost block" href="/profile">
+                    <Icon name="edit" />
+                    Profil saya
+                  </a>
                   <a class="btn ghost block" href="/jenis">
                     <Icon name="tag" />
                     Jenis project

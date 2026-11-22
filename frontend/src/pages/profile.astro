@@ -1,0 +1,79 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import { api, type Project } from '../lib/api';
+import { formatDate } from '../lib/format';
+
+const token = Astro.locals.token as string;
+const user = Astro.locals.user!;
+const error = Astro.url.searchParams.get('error');
+const projects = await api<Project[]>('/api/projects', { token });
+const owned = projects.filter((p) => p.role === 'owner').length;
+const shared = projects.length - owned;
+const initial = user.name.trim().charAt(0).toUpperCase();
+---
+
+<Layout title="Profil">
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Akun</p>
+      <h1>Profil saya</h1>
+    </div>
+  </section>
+
+  {error && <div class="alert error" role="alert"><Icon name="x" /><span>{error}</span></div>}
+
+  <section class="card profile-hero">
+    <span class="profile-avatar" aria-hidden="true">{initial}</span>
+    <div class="profile-id">
+      <p class="profile-name">{user.name}</p>
+      <p class="muted small">{user.email}</p>
+      <p class="muted small">Bergabung {formatDate(user.created_at)}</p>
+    </div>
+  </section>
+
+  <dl class="facts profile-stats" aria-label="Ringkasan akun">
+    <div class="fact"><dt>Project dimiliki</dt><dd>{owned}</dd></div>
+    <div class="fact"><dt>Dibagikan kepada saya</dt><dd>{shared}</dd></div>
+  </dl>
+
+  <section class="section" id="data" aria-labelledby="h-data">
+    <div class="section-head"><h2 id="h-data">Data akun</h2></div>
+    <form method="post" action="/api/profile/update" class="card form">
+      <label class="field">
+        <span>Nama</span>
+        <input type="text" name="name" required maxlength="100" value={user.name} autocomplete="name" />
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input type="email" name="email" required maxlength="254" value={user.email} autocomplete="email" inputmode="email" />
+        <span class="hint">Dipakai untuk masuk dan menerima undangan project.</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn primary" type="submit" data-busy="Menyimpan…">Simpan perubahan</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="section" id="password" aria-labelledby="h-password">
+    <div class="section-head"><h2 id="h-password">Ganti password</h2></div>
+    <form method="post" action="/api/profile/password" class="card form">
+      <label class="field">
+        <span>Password saat ini</span>
+        <input type="password" name="current_password" required autocomplete="current-password" />
+      </label>
+      <label class="field">
+        <span>Password baru</span>
+        <input type="password" name="new_password" required minlength="8" autocomplete="new-password" />
+        <span class="hint">Minimal 8 karakter.</span>
+      </label>
+      <label class="field">
+        <span>Ulangi password baru</span>
+        <input type="password" name="confirm_password" required minlength="8" autocomplete="new-password" />
+      </label>
+      <div class="form-actions">
+        <button class="btn primary" type="submit" data-busy="Menyimpan…">Ganti password</button>
+      </div>
+    </form>
+  </section>
+</Layout>

@@ -73,12 +73,20 @@ export interface Requirement {
   file_count: number;
 }
 
+export interface CommentAttachment {
+  id: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+}
+
 export interface ProjectComment {
   id: string;
   author_name: string;
   body: string;
   created_at: string;
   can_delete: boolean;
+  attachments: CommentAttachment[];
 }
 
 export interface ProjectFile {

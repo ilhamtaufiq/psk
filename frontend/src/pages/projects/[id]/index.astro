@@ -582,17 +582,32 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             <span class="muted small">{comments.length} komentar</span>
           </div>
 
-          <form method="post" action={`/api/projects/${id}/comments`} class="card comment-form">
+          <form
+            method="post"
+            action={`/api/projects/${id}/comments`}
+            enctype="multipart/form-data"
+            class="card comment-form"
+            data-attach-form
+          >
             <label class="field">
               <span class="sr-only">Tulis komentar</span>
               <textarea
                 name="body"
                 rows="3"
                 maxlength="2000"
-                required
-                placeholder="Tulis masukan, catatan, atau pertanyaan untuk project ini…"
+                placeholder="Tulis masukan, catatan, atau pertanyaan untuk project ini… Gambar bisa ditempel (Ctrl+V)."
               ></textarea>
             </label>
+            <div class="attach-tools">
+              <label class="btn ghost small attach-pick">
+                <Icon name="paperclip" />
+                <span>Lampirkan berkas</span>
+                <input type="file" name="attachment" multiple class="sr-only" data-attach-input />
+              </label>
+              <span class="muted small">Maks. 5 berkas, 10 MB per berkas</span>
+            </div>
+            <ul class="attach-picked" data-attach-list hidden></ul>
+            <p class="attach-note alert error" data-attach-note role="alert" hidden></p>
             <div class="form-actions">
               <button class="btn primary" type="submit" data-busy="Mengirim…">Kirim komentar</button>
             </div>
@@ -624,7 +639,26 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                       </form>
                     )}
                   </header>
-                  <p class="comment-body">{c.body}</p>
+                  {c.body && <p class="comment-body">{c.body}</p>}
+                  {c.attachments.length > 0 && (
+                    <ul class="comment-files">
+                      {c.attachments.map((a) => (
+                        <li>
+                          <a class="comment-file" href={`/api/comment-attachments/${a.id}`} download={a.original_name}>
+                            {a.mime_type.startsWith('image/') ? (
+                              <img src={`/api/comment-attachments/${a.id}`} alt={a.original_name} loading="lazy" />
+                            ) : (
+                              <Icon name="file" />
+                            )}
+                            <span class="comment-file-text">
+                              <span class="comment-file-name">{a.original_name}</span>
+                              <span class="muted small">{formatBytes(a.size_bytes)}</span>
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>
