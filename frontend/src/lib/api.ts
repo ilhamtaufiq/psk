@@ -53,6 +53,8 @@ export interface Project {
   status: ProjectStatus;
   project_type: ProjectType;
   project_type_label: string;
+  project_types: ProjectType[];
+  owner_name: string;
   start_date: string | null;
   due_date: string | null;
   created_at: string;
@@ -86,7 +88,10 @@ export interface ProjectInput {
   name: string;
   description?: string;
   status?: ProjectStatus;
+  /** Daftar jenis; server menerima juga bentuk lama `project_type` (satu jenis). */
+  project_types?: string[];
   project_type?: string;
+  owner_name?: string | null;
   start_date?: string | null;
   due_date?: string | null;
 }

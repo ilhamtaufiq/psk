@@ -5,8 +5,11 @@ const STATUSES: ProjectStatus[] = ['planning', 'active', 'on_hold', 'completed']
 /** Mengubah data formulir HTML menjadi payload untuk API project. */
 export function readProjectForm(form: FormData): ProjectInput {
   const status = String(form.get('status') ?? 'planning') as ProjectStatus;
-  // Jenis divalidasi di server terhadap daftar milik pengguna.
-  const projectType = String(form.get('project_type') ?? '').trim();
+  // Jenis bisa lebih dari satu (checkbox dengan nama yang sama); divalidasi di server.
+  const projectTypes = form
+    .getAll('project_type')
+    .map((v) => String(v).trim())
+    .filter(Boolean);
   const optional = (key: string) => {
     const value = String(form.get(key) ?? '').trim();
     return value === '' ? null : value;
@@ -15,7 +18,8 @@ export function readProjectForm(form: FormData): ProjectInput {
     name: String(form.get('name') ?? ''),
     description: String(form.get('description') ?? ''),
     status: STATUSES.includes(status) ? status : 'planning',
-    project_type: projectType || 'lainnya',
+    project_types: projectTypes.length ? projectTypes : ['lainnya'],
+    owner_name: optional('owner_name'),
     start_date: optional('start_date'),
     due_date: optional('due_date'),
   };

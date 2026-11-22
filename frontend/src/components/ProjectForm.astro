@@ -13,7 +13,8 @@ interface Props {
 const { action, project, submitLabel, busyLabel, cancelHref, types } = Astro.props;
 const statuses = Object.keys(STATUS_LABELS) as ProjectStatus[];
 const currentStatus = project?.status ?? 'planning';
-const currentType = project?.project_type ?? types.find((t) => t.slug === 'lainnya')?.slug ?? types[0]?.slug ?? '';
+const defaultType = types.find((t) => t.slug === 'lainnya')?.slug ?? types[0]?.slug ?? '';
+const currentTypes = project?.project_types?.length ? project.project_types : defaultType ? [defaultType] : [];
 ---
 
 <form method="post" action={action} class="card form">
@@ -38,6 +39,18 @@ const currentType = project?.project_type ?? types.find((t) => t.slug === 'lainn
       placeholder="Tujuan, ruang lingkup, dan catatan penting project">{project?.description ?? ''}</textarea>
   </label>
 
+  <label class="field">
+    <span>Pemilik project</span>
+    <input
+      name="owner_name"
+      maxlength="150"
+      value={project?.owner_name ?? ''}
+      placeholder="Nama pemilik atau klien, mis. Dinas PUPR"
+      autocomplete="off"
+    />
+    <span class="hint">Pemilik atau klien proyek, bukan akun pengguna aplikasi.</span>
+  </label>
+
   <fieldset class="chips">
     <legend>Status</legend>
     {
@@ -52,13 +65,14 @@ const currentType = project?.project_type ?? types.find((t) => t.slug === 'lainn
 
   <fieldset class="chips">
     <legend>Jenis project <a href="/jenis" class="legend-action">Kelola jenis</a></legend>
+    <p class="hint">Boleh pilih lebih dari satu.</p>
     {types.length === 0 && (
       <p class="hint">Belum ada jenis. <a href="/jenis">Tambahkan jenis dulu</a>.</p>
     )}
     {
       types.map((t) => (
         <label class="chip">
-          <input type="radio" name="project_type" value={t.slug} checked={t.slug === currentType} />
+          <input type="checkbox" name="project_type" value={t.slug} checked={currentTypes.includes(t.slug)} />
           <span>{t.label}</span>
         </label>
       ))

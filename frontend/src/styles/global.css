@@ -4173,3 +4173,21 @@ a.pager-btn:hover {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* ---------- Pemilik project ---------- */
+.card-owner {
+  margin-top: -4px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* ---------- Detail project di mobile: jumlah fakta ganjil tidak menyisakan celah ---------- */
+.facts > .fact:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .facts > .fact:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}

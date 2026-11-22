@@ -111,7 +111,7 @@ async fn load(state: &AppState, user_id: &str, q: &ReportQuery) -> Result<Vec<Pr
     let sql = format!(
         "{PROJECT_SELECT} WHERE (p.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?))
            AND (? IS NULL OR p.status = ?)
-           AND (? IS NULL OR p.project_type = ?)
+           AND (? IS NULL OR EXISTS (SELECT 1 FROM project_type_links l WHERE l.project_id = p.id AND l.type_slug = ?))
          ORDER BY p.name COLLATE NOCASE"
     );
     Ok(sqlx::query_as::<_, Project>(&sql)
@@ -124,7 +124,10 @@ async fn load(state: &AppState, user_id: &str, q: &ReportQuery) -> Result<Vec<Pr
         .bind(&project_type)
         .bind(&project_type)
         .fetch_all(&state.pool)
-        .await?)
+        .await?
+        .into_iter()
+        .map(Project::finish)
+        .collect())
 }
 
 /// Item kelengkapan yang belum punya berkas, dikelompokkan per project (urut dibuat).
@@ -194,7 +197,7 @@ async fn requirement_recap(state: &AppState, user_id: &str, q: &ReportQuery) -> 
          JOIN projects p ON p.id = r.project_id
          WHERE (p.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?))
            AND (? IS NULL OR p.status = ?)
-           AND (? IS NULL OR p.project_type = ?)
+           AND (? IS NULL OR EXISTS (SELECT 1 FROM project_type_links l WHERE l.project_id = p.id AND l.type_slug = ?))
          GROUP BY LOWER(TRIM(r.title))
          ORDER BY total DESC, label COLLATE NOCASE",
     )

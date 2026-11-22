@@ -81,7 +81,9 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
         <section class="card hero" id="ringkasan" style="margin-top:12px">
           <div class="hero-top">
             <StatusBadge status={project.status} />
-            <span class="type-pill">{project.project_type_label}</span>
+            {project.project_type_label.split(' · ').map((label) => (
+              <span class="type-pill">{label}</span>
+            ))}
             {deadline && project.status !== 'completed' && <span class={`deadline ${deadline.tone}`}>{deadline.text}</span>}
           </div>
 
@@ -150,6 +152,10 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
           <div class="fact">
             <dt>Selesai</dt>
             <dd>{formatDate(project.due_date)}</dd>
+          </div>
+          <div class="fact">
+            <dt>Pemilik</dt>
+            <dd>{project.owner_name || '—'}</dd>
           </div>
           <div class="fact">
             <dt>Berkas</dt>

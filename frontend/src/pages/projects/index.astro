@@ -142,7 +142,9 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
                 <div class="card-top">
                   <div class="badges">
                     <StatusBadge status={p.status} />
-                    <span class="type-pill">{p.project_type_label}</span>
+                    {p.project_type_label.split(' · ').map((label) => (
+                      <span class="type-pill">{label}</span>
+                    ))}
                     {p.role !== 'owner' && (
                       <span class="type-pill share-pill">Dibagikan · {p.role === 'editor' ? 'Editor' : 'Viewer'}</span>
                     )}
@@ -153,6 +155,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
                   </span>
                 </div>
                 <h2>{p.name}</h2>
+                {p.owner_name && <p class="card-owner">Pemilik: {p.owner_name}</p>}
                 <p class="clamp">{p.description || 'Belum ada deskripsi'}</p>
                 {progress !== null && (
                   <div

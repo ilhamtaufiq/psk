@@ -37,7 +37,8 @@ pub struct ProjectType {
 }
 
 const TYPE_SELECT: &str = "SELECT t.id, t.slug, t.label,
-    (SELECT COUNT(*) FROM projects p WHERE p.owner_id = t.owner_id AND p.project_type = t.slug) AS project_count
+    (SELECT COUNT(DISTINCT l.project_id) FROM project_type_links l JOIN projects p ON p.id = l.project_id
+        WHERE p.owner_id = t.owner_id AND l.type_slug = t.slug) AS project_count
     FROM project_types t";
 
 #[derive(Deserialize)]

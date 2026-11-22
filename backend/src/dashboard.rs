@@ -110,7 +110,14 @@ pub async fn summary(
         .await?;
 
     let status_rows = count_by(pool, owner, "status").await?;
-    let type_rows = count_by(pool, owner, "project_type").await?;
+    // Satu project bisa masuk beberapa jenis, sehingga dihitung lewat tabel penghubung.
+    let type_rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT l.type_slug, COUNT(DISTINCT p.id) FROM project_type_links l
+         JOIN projects p ON p.id = l.project_id WHERE p.owner_id = ? GROUP BY l.type_slug",
+    )
+    .bind(owner)
+    .fetch_all(pool)
+    .await?;
     let type_defs: Vec<(String, String)> = sqlx::query_as(
         "SELECT slug, label FROM project_types WHERE owner_id = ? ORDER BY label COLLATE NOCASE",
     )
