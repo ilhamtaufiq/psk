@@ -51,11 +51,11 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
             <>
               <nav class="nav-links" aria-label="Utama">
                 <a href="/dashboard" aria-current={isDash ? 'page' : undefined}>Dashboard</a>
-                <a href="/projects" aria-current={isList ? 'page' : undefined}>Proyek</a>
+                <a href="/projects" aria-current={isList ? 'page' : undefined}>Project</a>
                 <a href="/laporan" aria-current={isReport ? 'page' : undefined}>Laporan</a>
                 <a href="/projects/new" class="btn primary small" aria-current={isNew ? 'page' : undefined}>
                   <Icon name="plus" />
-                  Proyek baru
+                  Project baru
                 </a>
                 <span class="user" title={user.email}>{user.name}</span>
                 <form method="post" action="/api/logout">
@@ -69,7 +69,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
                   <p class="account-mail">{user.email}</p>
                   <a class="btn ghost block" href="/jenis">
                     <Icon name="tag" />
-                    Jenis proyek
+                    Jenis project
                   </a>
                   <form method="post" action="/api/logout">
                     <button class="btn ghost block" type="submit" data-busy="Keluar…">
@@ -98,7 +98,7 @@ const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
           </a>
           <a href="/projects" aria-current={isList ? 'page' : undefined}>
             <Icon name="list" />
-            <span>Proyek</span>
+            <span>Project</span>
           </a>
           <a href="/projects/new" aria-current={isNew ? 'page' : undefined}>
             <span class="fab"><Icon name="plus" /></span>

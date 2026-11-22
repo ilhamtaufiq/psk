@@ -19,7 +19,7 @@ if (project && project.role === 'viewer') {
   return Astro.redirect(`/projects/${project.id}`);
 }
 
-// Jenis yang ditawarkan adalah milik pemilik proyek, agar pengedit memilih jenis yang valid.
+// Jenis yang ditawarkan adalah milik pemilik project, agar pengedit memilih jenis yang valid.
 const types = project
   ? await api<ProjectTypeItem[]>(`/api/project-types?project_id=${project.id}`, { token })
   : [];
@@ -30,17 +30,17 @@ const types = project
     !project ? (
       <div class="card empty">
         <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
-        <h2>Proyek tidak ditemukan</h2>
-        <p>Proyek mungkin sudah dihapus atau bukan milik Anda.</p>
+        <h2>Project tidak ditemukan</h2>
+        <p>Project mungkin sudah dihapus atau bukan milik Anda.</p>
         <a href="/projects" class="btn ghost">Kembali ke daftar</a>
       </div>
     ) : (
       <>
-        <a href={`/projects/${project.id}`} class="back"><Icon name="arrow-left" />Kembali ke proyek</a>
+        <a href={`/projects/${project.id}`} class="back"><Icon name="arrow-left" />Kembali ke project</a>
 
         <section class="page-head" style="margin-top:8px">
           <div>
-            <p class="eyebrow">Ubah proyek</p>
+            <p class="eyebrow">Ubah project</p>
             <h1>{project.name}</h1>
           </div>
         </section>

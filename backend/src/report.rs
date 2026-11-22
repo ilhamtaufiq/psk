@@ -42,7 +42,7 @@ pub struct ReportSummary {
     pub requirements_done: i64,
 }
 
-/// Proyek di laporan, ditambah daftar item kelengkapan yang belum punya berkas.
+/// Project di laporan, ditambah daftar item kelengkapan yang belum punya berkas.
 #[derive(Serialize)]
 pub struct ReportProject {
     #[serde(flatten)]
@@ -50,7 +50,7 @@ pub struct ReportProject {
     pub missing_requirements: Vec<String>,
 }
 
-/// Rekap satu item kelengkapan lintas proyek: berapa proyek punya item ini, dan berapa sudah ada berkasnya.
+/// Rekap satu item kelengkapan lintas project: berapa project punya item ini, dan berapa sudah ada berkasnya.
 #[derive(Serialize)]
 pub struct RecapItem {
     pub label: String,
@@ -100,7 +100,7 @@ fn is_overdue(p: &Project, today: NaiveDate) -> bool {
     }
 }
 
-/// Semua proyek yang bisa diakses pengguna, dengan filter opsional. Urutan: nama.
+/// Semua project yang bisa diakses pengguna, dengan filter opsional. Urutan: nama.
 async fn load(state: &AppState, user_id: &str, q: &ReportQuery) -> Result<Vec<Project>, AppError> {
     let status = q.status.clone().filter(|s| !s.trim().is_empty());
     let project_type = q
@@ -127,7 +127,7 @@ async fn load(state: &AppState, user_id: &str, q: &ReportQuery) -> Result<Vec<Pr
         .await?)
 }
 
-/// Item kelengkapan yang belum punya berkas, dikelompokkan per proyek (urut dibuat).
+/// Item kelengkapan yang belum punya berkas, dikelompokkan per project (urut dibuat).
 async fn missing_requirements(
     state: &AppState,
     user_id: &str,
@@ -279,7 +279,7 @@ pub async fn csv(
         out.push_str("\r\n");
     }
 
-    let filename = format!("laporan-proyek-{}.csv", today);
+    let filename = format!("laporan-project-{}.csv", today);
     let mut res = (StatusCode::OK, out).into_response();
     let headers = res.headers_mut();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/csv; charset=utf-8"));

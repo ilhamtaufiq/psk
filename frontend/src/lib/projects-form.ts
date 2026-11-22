@@ -2,7 +2,7 @@ import type { ProjectInput, ProjectStatus } from './api';
 
 const STATUSES: ProjectStatus[] = ['planning', 'active', 'on_hold', 'completed'];
 
-/** Mengubah data formulir HTML menjadi payload untuk API proyek. */
+/** Mengubah data formulir HTML menjadi payload untuk API project. */
 export function readProjectForm(form: FormData): ProjectInput {
   const status = String(form.get('status') ?? 'planning') as ProjectStatus;
   // Jenis divalidasi di server terhadap daftar milik pengguna.

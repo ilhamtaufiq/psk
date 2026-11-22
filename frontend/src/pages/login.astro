@@ -5,7 +5,7 @@ import Icon from '../components/Icon.astro';
 const error = Astro.url.searchParams.get('error');
 const email = Astro.url.searchParams.get('email') ?? '';
 const features = [
-  { icon: 'calendar', text: 'Pantau tenggat dan progres setiap proyek' },
+  { icon: 'calendar', text: 'Pantau tenggat dan progres setiap project' },
   { icon: 'check', text: 'Lacak kelengkapan berkas dalam satu daftar' },
   { icon: 'paperclip', text: 'Simpan dan bagikan berkas ke tim' },
 ] as const;
@@ -31,7 +31,7 @@ const features = [
         <img class="auth-logo" src="/logo.svg" width="56" height="56" alt="" />
         <div>
           <h1>Selamat datang kembali</h1>
-          <p class="sub">Masuk untuk melanjutkan proyek dan berkas Anda.</p>
+          <p class="sub">Masuk untuk melanjutkan project dan berkas Anda.</p>
         </div>
       </header>
 

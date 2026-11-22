@@ -93,9 +93,9 @@ async fn notify_invite(state: &AppState, project_id: &str, inviter: &str, member
         .unwrap_or_else(|_| "tanpa nama".into());
     let role = if member.role == "editor" { "editor" } else { "viewer" };
     let url = format!("{}/projects/{}", state.app_url, project_id);
-    let subject = format!("Anda diundang ke proyek \"{project_name}\"");
+    let subject = format!("Anda diundang ke project \"{project_name}\"");
     let body = format!(
-        "Halo {},\n\n{inviter} mengundang Anda ke proyek \"{project_name}\" sebagai {role}.\n\nBuka proyek:\n{url}\n\nSalam,\nProyek Selepas Kerja\n",
+        "Halo {},\n\n{inviter} mengundang Anda ke project \"{project_name}\" sebagai {role}.\n\nBuka project:\n{url}\n\nSalam,\nProyek Selepas Kerja\n",
         member.name
     );
     let to = member.email.clone();
@@ -127,7 +127,7 @@ pub async fn add(
         ));
     };
     if target_id == user.id {
-        return Err(AppError::BadRequest("Anda sudah pemilik proyek ini".into()));
+        return Err(AppError::BadRequest("Anda sudah pemilik project ini".into()));
     }
 
     sqlx::query(
@@ -199,7 +199,7 @@ pub async fn remove(
             return Err(AppError::Forbidden("Hanya pemilik yang bisa mengeluarkan anggota".into()));
         }
     } else if my_role == Role::Owner {
-        return Err(AppError::BadRequest("Pemilik tidak bisa keluar dari proyeknya sendiri".into()));
+        return Err(AppError::BadRequest("Pemilik tidak bisa keluar dari projectnya sendiri".into()));
     }
 
     let result = sqlx::query("DELETE FROM project_members WHERE project_id = ? AND user_id = ?")

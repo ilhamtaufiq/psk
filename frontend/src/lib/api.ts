@@ -20,7 +20,7 @@ export const STATUS_LABELS: Record<ProjectStatus, string> = {
   completed: 'Selesai',
 };
 
-/** Slug jenis proyek (mis. 'konstruksi'). Daftar jenis milik pengguna diambil dari API. */
+/** Slug jenis project (mis. 'konstruksi'). Daftar jenis milik pengguna diambil dari API. */
 export type ProjectType = string;
 
 export interface ProjectTypeItem {
@@ -35,7 +35,7 @@ export const PROJECT_SORTS: Record<string, string> = {
   created: 'Terbaru dibuat',
   name: 'Nama (A–Z)',
   due: 'Tenggat terdekat',
-  type: 'Jenis proyek',
+  type: 'Jenis project',
   status: 'Status',
 };
 

@@ -68,7 +68,7 @@ pub async fn download(file_id: &str) -> Result<(Vec<u8>, String, String), AppErr
             }
         }))
         .timeout(Duration::from_secs(60))
-        .user_agent("ProyekSelepasKerja/0.1")
+        .user_agent("ProjectSelepasKerja/0.1")
         .build()
         .map_err(|e| AppError::Internal(e.to_string()))?;
 

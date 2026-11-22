@@ -46,7 +46,7 @@ fn clean_title(raw: &str) -> Result<String, AppError> {
     Ok(title)
 }
 
-/// Mengambil item daftar lalu memeriksa peran pengguna di proyeknya.
+/// Mengambil item daftar lalu memeriksa peran pengguna di projectnya.
 async fn find_owned_requirement(
     pool: &SqlitePool,
     id: &str,
@@ -93,7 +93,7 @@ pub async fn create(
             .await?;
     if count >= MAX_REQUIREMENTS_PER_PROJECT {
         return Err(AppError::BadRequest(format!(
-            "Maksimal {MAX_REQUIREMENTS_PER_PROJECT} item per proyek"
+            "Maksimal {MAX_REQUIREMENTS_PER_PROJECT} item per project"
         )));
     }
 

@@ -56,7 +56,7 @@ pub fn from_env() -> Result<Option<SmtpConfig>, String> {
     let from_raw = env_opt("SMTP_FROM").ok_or("SMTP_FROM wajib diisi jika SMTP_HOST diatur")?;
     let from: Mailbox = from_raw
         .parse()
-        .map_err(|e| format!("SMTP_FROM tidak valid ({e}); contoh: Proyek <noreply@contoh.com>"))?;
+        .map_err(|e| format!("SMTP_FROM tidak valid ({e}); contoh: Project <noreply@contoh.com>"))?;
 
     Ok(Some(SmtpConfig {
         host,

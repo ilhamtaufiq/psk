@@ -2,7 +2,7 @@ use sqlx::SqlitePool;
 
 use crate::error::AppError;
 
-/// Peran pengguna pada sebuah proyek, diurutkan dari yang paling terbatas.
+/// Peran pengguna pada sebuah project, diurutkan dari yang paling terbatas.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Role {
     Viewer,
@@ -21,7 +21,7 @@ impl Role {
     }
 }
 
-/// Peran pengguna di proyek, atau None bila tidak punya akses sama sekali.
+/// Peran pengguna di project, atau None bila tidak punya akses sama sekali.
 pub async fn role_of(pool: &SqlitePool, project_id: &str, user_id: &str) -> Result<Option<Role>, AppError> {
     let row: Option<(String, Option<String>)> = sqlx::query_as(
         "SELECT p.owner_id,
@@ -41,7 +41,7 @@ pub async fn role_of(pool: &SqlitePool, project_id: &str, user_id: &str) -> Resu
     })
 }
 
-/// Memastikan peran minimal. Tanpa akses sama sekali: 404 (proyek dianggap tidak ada).
+/// Memastikan peran minimal. Tanpa akses sama sekali: 404 (project dianggap tidak ada).
 /// Akses ada tetapi kurang: 403.
 pub async fn require(
     pool: &SqlitePool,
@@ -50,10 +50,10 @@ pub async fn require(
     min: Role,
 ) -> Result<Role, AppError> {
     match role_of(pool, project_id, user_id).await? {
-        None => Err(AppError::NotFound("Proyek tidak ditemukan".into())),
+        None => Err(AppError::NotFound("Project tidak ditemukan".into())),
         Some(role) if role >= min => Ok(role),
         Some(_) => Err(AppError::Forbidden(
-            "Peran Anda di proyek ini tidak mengizinkan tindakan tersebut".into(),
+            "Peran Anda di project ini tidak mengizinkan tindakan tersebut".into(),
         )),
     }
 }

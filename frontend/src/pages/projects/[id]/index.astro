@@ -43,7 +43,7 @@ try {
 const deadline = project ? deadlineOf(project.due_date, project.status) : null;
 const progress = project ? timeProgress(project.start_date, project.due_date, project.status) : null;
 
-// Peran pengguna di proyek ini: mengatur kontrol yang ditampilkan (backend tetap memeriksa).
+// Peran pengguna di project ini: mengatur kontrol yang ditampilkan (backend tetap memeriksa).
 const role = project?.role ?? 'viewer';
 const isOwner = role === 'owner';
 const myId = Astro.locals.user?.id ?? '';
@@ -68,13 +68,13 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
     !project ? (
       <div class="card empty">
         <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
-        <h2>Proyek tidak ditemukan</h2>
-        <p>Proyek mungkin sudah dihapus atau bukan milik Anda.</p>
-        <a href="/projects" class="btn ghost">Kembali ke daftar proyek</a>
+        <h2>Project tidak ditemukan</h2>
+        <p>Project mungkin sudah dihapus atau bukan milik Anda.</p>
+        <a href="/projects" class="btn ghost">Kembali ke daftar project</a>
       </div>
     ) : (
       <>
-        <a href="/projects" class="back"><Icon name="arrow-left" />Semua proyek</a>
+        <a href="/projects" class="back"><Icon name="arrow-left" />Semua project</a>
 
         {error && <div class="alert error" role="alert" style="margin-top:12px">{error}</div>}
 
@@ -123,7 +123,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               method="post"
               action={`/api/projects/${project.id}/delete`}
               class="owner-only"
-              data-confirm="Hapus proyek ini beserta seluruh berkasnya? Tindakan ini tidak bisa dibatalkan."
+              data-confirm="Hapus project ini beserta seluruh berkasnya? Tindakan ini tidak bisa dibatalkan."
             >
               <button class="btn danger" type="submit" data-busy="Menghapus…">
                 <Icon name="trash" />
@@ -193,7 +193,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
                         </select>
                       </form>
                       <form method="post" action={`/api/projects/${project.id}/members/${m.user_id}/delete`} class="owner-only"
-                        data-confirm={`Keluarkan ${m.name.replace(/["'\\]/g, '')} dari proyek ini?`}>
+                        data-confirm={`Keluarkan ${m.name.replace(/["'\\]/g, '')} dari project ini?`}>
                         <input type="hidden" name="anchor" value="#anggota" />
                         <button class="btn danger small" type="submit" data-busy="…">Keluarkan</button>
                       </form>
@@ -213,7 +213,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
               <label class="field">
                 <span>Peran</span>
                 <select name="role">
-                  <option value="editor" selected>Editor (bisa mengubah isi proyek)</option>
+                  <option value="editor" selected>Editor (bisa mengubah isi project)</option>
                   <option value="viewer">Viewer (hanya melihat)</option>
                 </select>
               </label>
@@ -225,9 +225,9 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             {
               !isOwner && (
                 <form method="post" action={`/api/projects/${project.id}/members/${myId}/delete`} class="leave-only"
-                  data-confirm="Keluar dari proyek ini? Anda tidak bisa melihatnya lagi kecuali diundang ulang.">
+                  data-confirm="Keluar dari project ini? Anda tidak bisa melihatnya lagi kecuali diundang ulang.">
                   <input type="hidden" name="self" value="1" />
-                  <button class="btn ghost" type="submit" data-busy="Keluar…">Keluar dari proyek</button>
+                  <button class="btn ghost" type="submit" data-busy="Keluar…">Keluar dari project</button>
                 </form>
               )
             }
@@ -244,7 +244,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             {
               fields.length === 0 ? (
                 <p class="muted small">
-                  Belum ada informasi. Tambahkan data proyek seperti nama pemohon atau alamat, lalu atur jenis dan urutannya.
+                  Belum ada informasi. Tambahkan data project seperti nama pemohon atau alamat, lalu atur jenis dan urutannya.
                 </p>
               ) : (
                 <div class="info-list">
@@ -386,7 +386,7 @@ const suggestions = ['Kontrak', 'Invoice', 'Berita acara', 'Laporan akhir', 'Fot
             {
               requirements.length === 0 ? (
                 <p class="muted small req-empty">
-                  Belum ada daftar. Tulis dokumen yang wajib ada di proyek ini, lalu unggah filenya satu per satu.
+                  Belum ada daftar. Tulis dokumen yang wajib ada di project ini, lalu unggah filenya satu per satu.
                 </p>
               ) : (
                 <ul class="req-list">

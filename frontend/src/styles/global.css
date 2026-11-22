@@ -623,7 +623,7 @@ main.container {
   font-weight: 560;
 }
 
-/* Grid kartu proyek */
+/* Grid kartu project */
 .grid {
   list-style: none;
   margin: 0;
@@ -725,7 +725,7 @@ main.container {
   max-width: 340px;
 }
 
-/* ---------- Detail proyek ---------- */
+/* ---------- Detail project ---------- */
 .hero {
   display: grid;
   gap: 14px;
@@ -1277,7 +1277,7 @@ select {
   }
 }
 
-/* ---------- Jenis proyek & pengurutan ---------- */
+/* ---------- Jenis project & pengurutan ---------- */
 .badges {
   display: flex;
   flex-wrap: wrap;
@@ -1776,7 +1776,7 @@ a.kpi:hover {
   }
 }
 
-/* ---------- Jenis proyek (dikelola pengguna) ---------- */
+/* ---------- Jenis project (dikelola pengguna) ---------- */
 .toolbar-note {
   margin: -8px 0 18px;
   font-size: 0.85rem;
@@ -1870,7 +1870,7 @@ a.kpi:hover {
   position: relative;
 }
 
-/* ---------- Berbagi proyek & peran ---------- */
+/* ---------- Berbagi project & peran ---------- */
 .detail.viewer .can-edit,
 .detail:not(.owner) .owner-only {
   display: none !important;
@@ -2281,7 +2281,7 @@ a.kpi:hover {
     border-radius: 50%;
   }
 
-  /* Tabel proyek */
+  /* Tabel project */
   .print-list-block h2 span {
     font-weight: 500;
     color: #667085;
@@ -3014,7 +3014,7 @@ a.kpi:hover {
   background: #6366f1;
 }
 
-/* ---------- Status proyek (stats) ---------- */
+/* ---------- Status project (stats) ---------- */
 .status-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

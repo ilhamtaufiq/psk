@@ -11,9 +11,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       token: locals.token,
       json: readProjectForm(form),
     });
-    return redirectTo(okUrl(`/projects/${project.id}`, 'Proyek dibuat'));
+    return redirectTo(okUrl(`/projects/${project.id}`, 'Project dibuat'));
   } catch (err) {
-    const message = err instanceof ApiError ? err.message : 'Gagal membuat proyek';
+    const message = err instanceof ApiError ? err.message : 'Gagal membuat project';
     return redirectTo(errorUrl('/projects/new', message));
   }
 };

@@ -12,9 +12,9 @@ export const POST: APIRoute = async ({ params, locals }) => {
       token: locals.token,
     });
     // Langsung ke salinan agar pengguna bisa segera mengubah namanya.
-    return redirectTo(okUrl(`/projects/${copy.id}/edit`, 'Proyek diduplikat'));
+    return redirectTo(okUrl(`/projects/${copy.id}/edit`, 'Project diduplikat'));
   } catch (err) {
-    const message = err instanceof ApiError ? err.message : 'Gagal menduplikat proyek';
+    const message = err instanceof ApiError ? err.message : 'Gagal menduplikat project';
     return redirectTo(errorUrl(`/projects/${id}`, message));
   }
 };

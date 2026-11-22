@@ -1,5 +1,5 @@
-// Pembaruan langsung halaman detail proyek: saat ada perubahan dari backend (berkas, kelengkapan,
-// informasi, anggota, atau proyek), bagian .detail diambil ulang tanpa reload penuh.
+// Pembaruan langsung halaman detail project: saat ada perubahan dari backend (berkas, kelengkapan,
+// informasi, anggota, atau project), bagian .detail diambil ulang tanpa reload penuh.
 // Dialog pratinjau dan form yang sedang diisi tidak diganggu.
 
 const root = document.querySelector<HTMLElement>('[data-live-project]');
@@ -33,7 +33,7 @@ if (root) {
         cache: 'no-store',
         headers: { accept: 'text/html' },
       });
-      // Sesi habis, proyek dihapus, atau akses dicabut: biarkan halaman apa adanya.
+      // Sesi habis, project dihapus, atau akses dicabut: biarkan halaman apa adanya.
       if (!res.ok || res.redirected) return;
 
       const html = await res.text();

@@ -112,7 +112,7 @@ fn check_value(field_type: &str, value: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Mengambil field lalu memeriksa peran pengguna di proyeknya.
+/// Mengambil field lalu memeriksa peran pengguna di projectnya.
 async fn find_owned_field(pool: &SqlitePool, id: &str, user_id: &str, min: Role) -> Result<ProjectField, AppError> {
     let sql = format!("{FIELD_SELECT} WHERE f.id = ?");
     let field = sqlx::query_as::<_, ProjectField>(&sql)
@@ -155,7 +155,7 @@ pub async fn create(
     .await?;
     if count >= MAX_FIELDS_PER_PROJECT {
         return Err(AppError::BadRequest(format!(
-            "Maksimal {MAX_FIELDS_PER_PROJECT} informasi per proyek"
+            "Maksimal {MAX_FIELDS_PER_PROJECT} informasi per project"
         )));
     }
 

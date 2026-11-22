@@ -36,7 +36,7 @@ pub struct AppState {
     pub mail: Option<mail::SmtpConfig>,
     /// Alamat publik aplikasi, dipakai untuk tautan di email.
     pub app_url: String,
-    /// Saluran perubahan data proyek untuk Server-Sent Events.
+    /// Saluran perubahan data project untuk Server-Sent Events.
     pub events: tokio::sync::broadcast::Sender<events::ChangeEvent>,
 }
 

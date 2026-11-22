@@ -5,7 +5,7 @@ import { backTo, errorUrl, redirectTo, safeId, okUrl } from '../../../../lib/htt
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const id = safeId(params.id ?? null);
   const form = await request.formData();
-  // Id proyek dikirim lewat formulir agar peramban kembali ke halaman proyek yang sama.
+  // Id project dikirim lewat formulir agar peramban kembali ke halaman project yang sama.
   const projectId = safeId(form.get('project_id'));
   if (!id || !projectId) return redirectTo('/dashboard');
   const back = backTo(projectId, form.get('anchor'));

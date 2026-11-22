@@ -46,7 +46,7 @@ const FILE_SELECT: &str = "SELECT f.id, f.project_id, f.requirement_id, f.origin
     f.size_bytes, u.name AS uploaded_by_name, f.created_at
     FROM project_files f JOIN users u ON u.id = f.uploaded_by";
 
-/// Berkas diambil lalu peran pengguna di proyeknya diperiksa (lihat, atau ubah untuk hapus).
+/// Berkas diambil lalu peran pengguna di projectnya diperiksa (lihat, atau ubah untuk hapus).
 async fn find_file_for(
     pool: &SqlitePool,
     file_id: &str,
@@ -161,7 +161,7 @@ pub async fn upload(
         return Err(AppError::BadRequest("Ukuran berkas maksimal 25 MB".into()));
     }
 
-    // Item daftar harus milik proyek yang sama.
+    // Item daftar harus milik project yang sama.
     if let Some(rid) = &requirement_id {
         let (found,): (i64,) = sqlx::query_as(
             "SELECT COUNT(*) FROM project_requirements WHERE id = ? AND project_id = ?",
@@ -172,7 +172,7 @@ pub async fn upload(
         .await?;
         if found == 0 {
             return Err(AppError::BadRequest(
-                "Item daftar berkas tidak valid untuk proyek ini".into(),
+                "Item daftar berkas tidak valid untuk project ini".into(),
             ));
         }
     }
@@ -344,7 +344,7 @@ pub async fn upload_from_url(
         .await?;
         if found == 0 {
             return Err(AppError::BadRequest(
-                "Item daftar berkas tidak valid untuk proyek ini".into(),
+                "Item daftar berkas tidak valid untuk project ini".into(),
             ));
         }
     }

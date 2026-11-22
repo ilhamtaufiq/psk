@@ -37,8 +37,8 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
   <section class="page-head report-head screen-only">
     <div>
       <p class="eyebrow">Laporan</p>
-      <h1>Laporan semua proyek</h1>
-      <p class="muted small" style="margin-top:4px">Dibuat {generated} · mencakup proyek milik Anda dan yang dibagikan</p>
+      <h1>Laporan semua project</h1>
+      <p class="muted small" style="margin-top:4px">Dibuat {generated} · mencakup project milik Anda dan yang dibagikan</p>
     </div>
     <div class="actions report-actions">
       <a href={csvHref} class="btn ghost"><Icon name="download" />Unduh CSV</a>
@@ -68,7 +68,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
 
   <section class="kpis report-kpis screen-only" aria-label="Ringkasan laporan">
     <div class="card kpi">
-      <span class="kpi-label">Proyek</span>
+      <span class="kpi-label">Project</span>
       <span class="kpi-value">{summary.total}</span>
       <span class="kpi-sub">{summary.completed} selesai</span>
     </div>
@@ -108,7 +108,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
       <span class="muted small">{recapDone} dari {recapTotal} item · {recapPercent}%</span>
     </div>
     {recap.length === 0 ? (
-      <p class="muted small">Belum ada item kelengkapan pada proyek yang dipilih.</p>
+      <p class="muted small">Belum ada item kelengkapan pada project yang dipilih.</p>
     ) : (
       <div class="recap-grid">
         {recap.map((r) => (
@@ -129,16 +129,16 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
 
   <section class="section screen-only">
     <div class="section-head">
-      <h2>Daftar proyek</h2>
-      <span class="muted small">{projects.length} proyek · urut nama</span>
+      <h2>Daftar project</h2>
+      <span class="muted small">{projects.length} project · urut nama</span>
     </div>
 
     {
       projects.length === 0 ? (
         <div class="card empty">
           <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
-          <h2>Tidak ada proyek untuk laporan ini</h2>
-          <p>Ubah filter status atau jenis, atau buat proyek baru.</p>
+          <h2>Tidak ada project untuk laporan ini</h2>
+          <p>Ubah filter status atau jenis, atau buat project baru.</p>
         </div>
       ) : (
         <div class="table-wrap card">
@@ -191,7 +191,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
     <header class="print-head">
       <img class="print-logo" src="/logo.svg" width="44" height="44" alt="" />
       <div class="print-title">
-        <p class="print-kicker">Laporan Proyek</p>
+        <p class="print-kicker">Laporan Project</p>
         <h1>Proyek Selepas Kerja</h1>
         <p class="print-meta">Dibuat {generated}</p>
         <p class="print-meta">Filter: {filterText}</p>
@@ -199,7 +199,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
     </header>
 
     <dl class="print-kpis">
-      <div><dt>Total proyek</dt><dd>{summary.total}</dd></div>
+      <div><dt>Total project</dt><dd>{summary.total}</dd></div>
       <div><dt>Selesai</dt><dd>{summary.completed}</dd></div>
       <div class={summary.overdue > 0 ? 'print-warn' : ''}><dt>Terlambat</dt><dd>{summary.overdue}</dd></div>
       <div><dt>Kelengkapan</dt><dd>{reqPercent}%</dd></div>
@@ -208,7 +208,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
 
     <section class="print-status-block">
       <h2>Distribusi status</h2>
-      <div class="print-bar" role="img" aria-label="Distribusi status proyek">
+      <div class="print-bar" role="img" aria-label="Distribusi status project">
         {summary.by_status.filter((s) => s.count > 0).map((s) => (
           <span class={`print-seg seg-${s.key}`} style={`flex:${s.count}`} />
         ))}
@@ -237,9 +237,9 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
     </section>
 
     <section class="print-list-block">
-      <h2>Daftar proyek <span>({projects.length})</span></h2>
+      <h2>Daftar project <span>({projects.length})</span></h2>
       {projects.length === 0 ? (
-        <p class="print-empty">Tidak ada proyek untuk filter ini.</p>
+        <p class="print-empty">Tidak ada project untuk filter ini.</p>
       ) : (
         <table class="print-table">
           <colgroup>
@@ -255,7 +255,7 @@ const roleLabel = (r: string) => (r === 'owner' ? 'Pemilik' : r === 'editor' ? '
           <thead>
             <tr>
               <th class="c-no">No</th>
-              <th class="c-name">Nama proyek</th>
+              <th class="c-name">Nama project</th>
               <th>Jenis</th>
               <th>Status</th>
               <th>Periode</th>

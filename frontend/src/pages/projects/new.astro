@@ -8,13 +8,13 @@ const error = Astro.url.searchParams.get('error');
 const types = await api<ProjectTypeItem[]>('/api/project-types', { token: Astro.locals.token as string });
 ---
 
-<Layout title="Proyek baru">
-  <a href="/projects" class="back"><Icon name="arrow-left" />Semua proyek</a>
+<Layout title="Project baru">
+  <a href="/projects" class="back"><Icon name="arrow-left" />Semua project</a>
 
   <section class="page-head" style="margin-top:8px">
     <div>
-      <p class="eyebrow">Proyek baru</p>
-      <h1>Mulai proyek baru</h1>
+      <p class="eyebrow">Project baru</p>
+      <h1>Mulai project baru</h1>
       <p class="muted small" style="margin-top:4px">Isi informasi dasar. Anda bisa mengubahnya kapan saja.</p>
     </div>
   </section>
@@ -23,7 +23,7 @@ const types = await api<ProjectTypeItem[]>('/api/project-types', { token: Astro.
 
   <ProjectForm
     action="/api/projects"
-    submitLabel="Simpan proyek"
+    submitLabel="Simpan project"
     busyLabel="Menyimpan…"
     cancelHref="/projects"
     types={types}

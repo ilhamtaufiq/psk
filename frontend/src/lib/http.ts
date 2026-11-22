@@ -49,7 +49,7 @@ export function okUrl(path: string, message: string): string {
 }
 
 /**
- * Kembali ke halaman proyek dan ke bagian yang sama (agar posisi scroll tidak lompat).
+ * Kembali ke halaman project dan ke bagian yang sama (agar posisi scroll tidak lompat).
  * Hanya dua anchor yang diizinkan.
  */
 export function backTo(projectId: string, anchor: FormDataEntryValue | null): string {

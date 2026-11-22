@@ -50,16 +50,16 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
   .join(' · ');
 ---
 
-<Layout title="Proyek">
+<Layout title="Project">
   <section class="page-head">
     <div>
-      <p class="eyebrow">Daftar proyek</p>
-      <h1>{filterLabel || 'Semua proyek'}</h1>
+      <p class="eyebrow">Daftar project</p>
+      <h1>{filterLabel || 'Semua project'}</h1>
       <p class="muted small" style="margin-top:4px">
-        {projects.length} proyek · diurutkan: {PROJECT_SORTS[sort].toLowerCase()}
+        {projects.length} project · diurutkan: {PROJECT_SORTS[sort].toLowerCase()}
       </p>
     </div>
-    <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Proyek baru</a>
+    <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Project baru</a>
   </section>
 
   {error && <div class="alert error" role="alert">{error}</div>}
@@ -75,15 +75,15 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
     }
   </nav>
 
-  <form method="get" action="/projects" class="toolbar" aria-label="Cari, filter, dan urutkan proyek">
+  <form method="get" action="/projects" class="toolbar" aria-label="Cari, filter, dan urutkan project">
     <label class="search-field">
-      <span class="sr-only">Cari nama proyek</span>
+      <span class="sr-only">Cari nama project</span>
       <Icon name="search" />
-      <input type="search" placeholder="Cari nama proyek…" autocomplete="off" data-filter-list="#project-grid" />
+      <input type="search" placeholder="Cari nama project…" autocomplete="off" data-filter-list="#project-grid" />
     </label>
     {status && <input type="hidden" name="status" value={status} />}
     <label class="select-field">
-      <span class="sr-only">Jenis proyek</span>
+      <span class="sr-only">Jenis project</span>
       <Icon name="tag" />
       <select name="type" data-autosubmit>
         <option value="">Semua jenis</option>
@@ -108,19 +108,19 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
     <noscript><button class="btn ghost small" type="submit">Terapkan</button></noscript>
   </form>
 
-  <p class="toolbar-note"><a href="/jenis">Kelola jenis proyek</a></p>
+  <p class="toolbar-note"><a href="/jenis">Kelola jenis project</a></p>
 
   {
     projects.length === 0 ? (
       <div class="card empty">
         <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
-        <h2>{filterLabel ? 'Tidak ada proyek yang cocok' : 'Belum ada proyek'}</h2>
+        <h2>{filterLabel ? 'Tidak ada project yang cocok' : 'Belum ada project'}</h2>
         <p>
           {filterLabel
-            ? 'Coba ubah filter jenis atau status, atau buat proyek baru.'
-            : 'Buat proyek pertama Anda untuk mulai mencatat progres dan menyimpan berkas kerja.'}
+            ? 'Coba ubah filter jenis atau status, atau buat project baru.'
+            : 'Buat project pertama Anda untuk mulai mencatat progres dan menyimpan berkas kerja.'}
         </p>
-        <a href="/projects/new" class="btn primary"><Icon name="plus" />Buat proyek</a>
+        <a href="/projects/new" class="btn primary"><Icon name="plus" />Buat project</a>
       </div>
     ) : (
       <ul class="grid" id="project-grid">
@@ -172,7 +172,7 @@ const filterLabel = [status ? STATUS_LABELS[status] : null, typeLabel]
           );
         })}
       </ul>
-      <p class="filter-empty" data-filter-empty hidden>Tidak ada proyek yang cocok dengan pencarian.</p>
+      <p class="filter-empty" data-filter-empty hidden>Tidak ada project yang cocok dengan pencarian.</p>
     )
   }
 </Layout>

@@ -8,9 +8,9 @@ export const POST: APIRoute = async ({ params, locals }) => {
 
   try {
     await api(`/api/projects/${id}`, { method: 'DELETE', token: locals.token });
-    return redirectTo(okUrl('/dashboard', 'Proyek dihapus'));
+    return redirectTo(okUrl('/dashboard', 'Project dihapus'));
   } catch (err) {
-    const message = err instanceof ApiError ? err.message : 'Gagal menghapus proyek';
+    const message = err instanceof ApiError ? err.message : 'Gagal menghapus project';
     return redirectTo(errorUrl(`/projects/${id}`, message));
   }
 };

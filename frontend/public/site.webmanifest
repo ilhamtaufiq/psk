@@ -1,7 +1,7 @@
 {
   "name": "Proyek Selepas Kerja",
-  "short_name": "Proyek",
-  "description": "Kelola proyek, kelengkapan berkas, dan dokumen kerja.",
+  "short_name": "Project",
+  "description": "Kelola project, kelengkapan berkas, dan dokumen kerja.",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#f4f5fb",

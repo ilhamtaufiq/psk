@@ -1,4 +1,4 @@
-//! Perubahan data proyek disiarkan ke browser yang sedang melihat proyek itu (Server-Sent Events).
+//! Perubahan data project disiarkan ke browser yang sedang melihat project itu (Server-Sent Events).
 //! Event hanya berisi "apa yang berubah", bukan datanya; browser lalu mengambil ulang halaman.
 
 use std::convert::Infallible;

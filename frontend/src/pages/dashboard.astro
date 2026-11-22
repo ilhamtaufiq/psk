@@ -41,19 +41,19 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
       <h1>{greeting}, {firstName}</h1>
       <p class="muted small" style="margin-top:4px">
         {data.total_projects === 0
-          ? 'Belum ada proyek. Mulai dengan membuat proyek pertama Anda.'
-          : `Ringkasan dari ${data.total_projects} proyek Anda.`}
+          ? 'Belum ada project. Mulai dengan membuat project pertama Anda.'
+          : `Ringkasan dari ${data.total_projects} project Anda.`}
       </p>
     </div>
     <div class="actions">
       <a href="/laporan" class="btn ghost"><Icon name="file" />Laporan</a>
-      <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Proyek baru</a>
+      <a href="/projects/new" class="btn primary hide-mobile"><Icon name="plus" />Project baru</a>
     </div>
   </section>
 
   <section class="kpis" aria-label="Ringkasan angka">
     <a href="/projects" class="card kpi">
-      <span class="kpi-label">Total proyek</span>
+      <span class="kpi-label">Total project</span>
       <span class="kpi-value">{data.total_projects}</span>
       <span class="kpi-sub">{active} sedang berjalan</span>
     </a>
@@ -65,7 +65,7 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
     <a href="/projects?sort=due" class="card kpi">
       <span class="kpi-label">Tenggat 7 hari</span>
       <span class="kpi-value">{dueThisWeek}</span>
-      <span class="kpi-sub">proyek jatuh tempo</span>
+      <span class="kpi-sub">project jatuh tempo</span>
     </a>
     <div class="card kpi">
       <span class="kpi-label">Kelengkapan</span>
@@ -81,13 +81,13 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
 
   <div class="dash-grid">
     <section class="card dash-card" aria-labelledby="h-status">
-      <h2 id="h-status">Status proyek</h2>
+      <h2 id="h-status">Status project</h2>
       {
         statusTotal === 0 ? (
           <p class="muted small">Belum ada data.</p>
         ) : (
           <>
-            <div class="stack-bar" role="img" aria-label="Distribusi status proyek">
+            <div class="stack-bar" role="img" aria-label="Distribusi status project">
               {statusKeys.map((s) => {
                 const n = countOf(data.by_status, s);
                 return n > 0 ? <span class={`seg seg-${s}`} style={`flex:${n}`} /> : null;
@@ -111,7 +111,7 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
     </section>
 
     <section class="card dash-card" aria-labelledby="h-type">
-      <h2 id="h-type">Jenis proyek</h2>
+      <h2 id="h-type">Jenis project</h2>
       <ul class="hbars">
         {
           data.by_type
@@ -177,7 +177,7 @@ const statusKeys = Object.keys(STATUS_LABELS) as ProjectStatus[];
     <section class="card dash-card dash-wide" aria-labelledby="h-recent">
       <div class="dash-head">
         <h2 id="h-recent">Aktivitas terbaru</h2>
-        <a href="/projects" class="small">Semua proyek</a>
+        <a href="/projects" class="small">Semua project</a>
       </div>
       {
         data.recent.length === 0 ? (

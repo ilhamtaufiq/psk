@@ -104,7 +104,7 @@ fn validate(input: ProjectInput) -> Result<Valid, AppError> {
     let name = input.name.trim().to_string();
     if name.is_empty() || name.chars().count() > 150 {
         return Err(AppError::BadRequest(
-            "Nama proyek wajib diisi (maks. 150 karakter)".into(),
+            "Nama project wajib diisi (maks. 150 karakter)".into(),
         ));
     }
 
@@ -117,7 +117,7 @@ fn validate(input: ProjectInput) -> Result<Valid, AppError> {
 
     let status = input.status.unwrap_or_else(|| "planning".into());
     if !STATUSES.contains(&status.as_str()) {
-        return Err(AppError::BadRequest("Status proyek tidak dikenal".into()));
+        return Err(AppError::BadRequest("Status project tidak dikenal".into()));
     }
 
     let project_type = input
@@ -126,7 +126,7 @@ fn validate(input: ProjectInput) -> Result<Valid, AppError> {
         .filter(|t| !t.is_empty())
         .unwrap_or_else(|| "lainnya".into());
     if project_type.chars().count() > 60 {
-        return Err(AppError::BadRequest("Jenis proyek tidak valid".into()));
+        return Err(AppError::BadRequest("Jenis project tidak valid".into()));
     }
 
     let start = parse_date(input.start_date, "Tanggal mulai")?;
@@ -149,8 +149,8 @@ fn validate(input: ProjectInput) -> Result<Valid, AppError> {
     })
 }
 
-/// Mengambil proyek milik pengguna; mengembalikan 404 jika tidak ada atau bukan miliknya.
-/// Proyek yang bisa diakses pengguna (pemilik atau anggota). Di luar itu: 404.
+/// Mengambil project milik pengguna; mengembalikan 404 jika tidak ada atau bukan miliknya.
+/// Project yang bisa diakses pengguna (pemilik atau anggota). Di luar itu: 404.
 pub async fn fetch_project(
     pool: &SqlitePool,
     id: &str,
@@ -167,7 +167,7 @@ pub async fn fetch_project(
         .bind(user_id)
         .fetch_optional(pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Proyek tidak ditemukan".into()))
+        .ok_or_else(|| AppError::NotFound("Project tidak ditemukan".into()))
 }
 
 pub async fn project_owner(pool: &SqlitePool, id: &str) -> Result<String, AppError> {
@@ -176,7 +176,7 @@ pub async fn project_owner(pool: &SqlitePool, id: &str) -> Result<String, AppErr
         .fetch_optional(pool)
         .await?;
     row.map(|(o,)| o)
-        .ok_or_else(|| AppError::NotFound("Proyek tidak ditemukan".into()))
+        .ok_or_else(|| AppError::NotFound("Project tidak ditemukan".into()))
 }
 
 pub async fn list(
@@ -253,7 +253,7 @@ pub async fn update(
     Json(input): Json<ProjectInput>,
 ) -> Result<Json<Project>, AppError> {
     access::require(&state.pool, &id, &user.id, Role::Editor).await?;
-    // Jenis dicek terhadap daftar pemilik proyek, bukan daftar pengedit.
+    // Jenis dicek terhadap daftar pemilik project, bukan daftar pengedit.
     let owner = project_owner(&state.pool, &id).await?;
     let v = validate(input)?;
     crate::types::ensure_exists(&state.pool, &owner, &v.project_type).await?;
@@ -290,7 +290,7 @@ pub async fn delete(
         .execute(&state.pool)
         .await?;
     if result.rows_affected() == 0 {
-        return Err(AppError::NotFound("Proyek tidak ditemukan".into()));
+        return Err(AppError::NotFound("Project tidak ditemukan".into()));
     }
 
     // Berkas di disk ikut dihapus; baris berkas sudah terhapus lewat ON DELETE CASCADE.
@@ -308,8 +308,8 @@ fn copy_name(original: &str) -> String {
     format!("{base}{COPY_SUFFIX}")
 }
 
-/// Menduplikat proyek: detail, informasi detail, dan daftar kelengkapan ikut disalin; berkas tidak.
-/// Status salinan kembali ke "Perencanaan" karena ini proyek baru.
+/// Menduplikat project: detail, informasi detail, dan daftar kelengkapan ikut disalin; berkas tidak.
+/// Status salinan kembali ke "Perencanaan" karena ini project baru.
 pub async fn duplicate(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,

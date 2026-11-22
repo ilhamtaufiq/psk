@@ -63,7 +63,7 @@ pub async fn seed_defaults(pool: &SqlitePool, owner_id: &str) -> Result<(), AppE
     Ok(())
 }
 
-/// Memastikan slug jenis ada di daftar pengguna. Dipanggil saat membuat atau mengubah proyek.
+/// Memastikan slug jenis ada di daftar pengguna. Dipanggil saat membuat atau mengubah project.
 pub async fn ensure_exists(pool: &SqlitePool, owner_id: &str, slug: &str) -> Result<(), AppError> {
     let (count,): (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM project_types WHERE owner_id = ? AND slug = ?")
@@ -73,7 +73,7 @@ pub async fn ensure_exists(pool: &SqlitePool, owner_id: &str, slug: &str) -> Res
             .await?;
     if count == 0 {
         return Err(AppError::BadRequest(
-            "Jenis proyek tidak dikenal. Tambahkan dulu di menu Jenis proyek.".into(),
+            "Jenis project tidak dikenal. Tambahkan dulu di menu Jenis project.".into(),
         ));
     }
     Ok(())
@@ -150,12 +150,12 @@ async fn find_owned(pool: &SqlitePool, id: &str, owner_id: &str) -> Result<Proje
         .bind(owner_id)
         .fetch_optional(pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Jenis proyek tidak ditemukan".into()))
+        .ok_or_else(|| AppError::NotFound("Jenis project tidak ditemukan".into()))
 }
 
 #[derive(Deserialize)]
 pub struct ListQuery {
-    /// Bila diisi, daftar yang dikembalikan adalah jenis milik pemilik proyek itu
+    /// Bila diisi, daftar yang dikembalikan adalah jenis milik pemilik project itu
     /// (dipakai pengedit yang bukan pemilik).
     project_id: Option<String>,
 }
@@ -193,7 +193,7 @@ pub async fn create(
         .await?;
     if total >= MAX_TYPES_PER_USER {
         return Err(AppError::BadRequest(format!(
-            "Maksimal {MAX_TYPES_PER_USER} jenis proyek"
+            "Maksimal {MAX_TYPES_PER_USER} jenis project"
         )));
     }
     if label_taken(&state.pool, &user.id, &label, "").await? {
@@ -214,7 +214,7 @@ pub async fn create(
     Ok((StatusCode::CREATED, Json(find_owned(&state.pool, &id, &user.id).await?)))
 }
 
-/// Mengubah nama tampilan saja. Slug tetap, jadi proyek yang memakai jenis ini tidak terpengaruh.
+/// Mengubah nama tampilan saja. Slug tetap, jadi project yang memakai jenis ini tidak terpengaruh.
 pub async fn update(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
@@ -237,7 +237,7 @@ pub async fn update(
     Ok(Json(find_owned(&state.pool, &id, &user.id).await?))
 }
 
-/// Jenis yang masih dipakai proyek tidak bisa dihapus, supaya tidak ada proyek dengan jenis yatim.
+/// Jenis yang masih dipakai project tidak bisa dihapus, supaya tidak ada project dengan jenis yatim.
 pub async fn delete(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
@@ -246,7 +246,7 @@ pub async fn delete(
     let existing = find_owned(&state.pool, &id, &user.id).await?;
     if existing.project_count > 0 {
         return Err(AppError::Conflict(format!(
-            "Jenis ini masih dipakai {} proyek. Pindahkan proyek tersebut ke jenis lain dulu.",
+            "Jenis ini masih dipakai {} project. Pindahkan project tersebut ke jenis lain dulu.",
             existing.project_count
         )));
     }
