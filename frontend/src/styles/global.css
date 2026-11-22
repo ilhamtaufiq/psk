@@ -4191,3 +4191,137 @@ a.pager-btn:hover {
     grid-column: auto;
   }
 }
+
+/* ---------- Portal klien (hanya baca) ---------- */
+.portal-meter {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.portal-meter-label {
+  font-size: var(--fs-sm);
+  font-weight: 620;
+  color: var(--muted);
+}
+
+.portal-open {
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.portal-hero h1 {
+  margin-top: 10px;
+}
+
+.portal-desc {
+  margin-top: 10px;
+  white-space: pre-line;
+  color: var(--text);
+}
+
+.portal-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.portal-stat {
+  display: grid;
+  gap: 8px;
+}
+
+.portal-big {
+  font-size: 1.9rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.portal-list {
+  display: grid;
+  padding: 4px 0;
+  margin: 0;
+  list-style: none;
+}
+
+.portal-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.portal-list li:last-child {
+  border-bottom: 0;
+}
+
+.portal-list-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.portal-check {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+}
+
+.portal-check.done {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--accent-text);
+}
+
+.portal-check .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.portal-info {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.portal-info > div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.portal-info > div:last-child {
+  border-bottom: 0;
+}
+
+.portal-info dt {
+  font-size: var(--fs-sm);
+  font-weight: 620;
+  color: var(--muted);
+}
+
+.portal-info dd {
+  margin: 0;
+  font-weight: 560;
+  overflow-wrap: anywhere;
+}
+
+.portal-foot {
+  margin-top: 28px;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .portal-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,80 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
+import { api, type Project } from '../../lib/api';
+import { deadlineOf, timeProgress } from '../../lib/format';
+
+const token = Astro.locals.token as string;
+// Portal menampilkan project yang dibagikan kepada pengguna (peran editor atau viewer).
+const shared = (await api<Project[]>('/api/projects?sort=due', { token })).filter((p) => p.role !== 'owner');
+---
+
+<Layout title="Portal klien">
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Portal klien</p>
+      <h1>Progres project Anda</h1>
+      <p class="muted small" style="margin-top:4px">
+        {shared.length === 0 ? 'Belum ada project yang dibagikan kepada Anda.' : `${shared.length} project dibagikan kepada Anda · hanya baca`}
+      </p>
+    </div>
+  </section>
+
+  {
+    shared.length === 0 ? (
+      <div class="card empty">
+        <img class="empty-art" src="/logo.svg" width="96" height="96" alt="" />
+        <h2>Belum ada progres untuk ditampilkan</h2>
+        <p>Minta pengelola project mengundang alamat email Anda sebagai pemilik atau klien. Project akan muncul di sini.</p>
+      </div>
+    ) : (
+      <ul class="grid">
+        {shared.map((p) => {
+          const deadline = deadlineOf(p.due_date, p.status);
+          const time = timeProgress(p.start_date, p.due_date, p.status);
+          const docs = p.req_total > 0 ? Math.round((p.req_done / p.req_total) * 100) : null;
+          return (
+            <li>
+              <a href={`/portal/${p.id}`} class="card project-card">
+                <div class="card-top">
+                  <div class="badges">
+                    <StatusBadge status={p.status} />
+                    {p.project_type_label.split(' · ').map((label) => (
+                      <span class="type-pill">{label}</span>
+                    ))}
+                  </div>
+                </div>
+                <h2>{p.name}</h2>
+                {p.owner_name && <p class="card-owner">Pemilik: {p.owner_name}</p>}
+                <div class="portal-meter">
+                  <span class="portal-meter-label">Waktu</span>
+                  {time !== null ? (
+                    <div class="progress" role="progressbar" aria-label="Progres waktu" aria-valuemin={0} aria-valuemax={100} aria-valuenow={time}>
+                      <span style={`width:${time}%`} />
+                    </div>
+                  ) : (
+                    <span class="muted small">Tanggal belum lengkap</span>
+                  )}
+                </div>
+                <div class="portal-meter">
+                  <span class="portal-meter-label">Kelengkapan berkas</span>
+                  {docs !== null ? (
+                    <div class="progress" role="progressbar" aria-label="Kelengkapan berkas" aria-valuemin={0} aria-valuemax={100} aria-valuenow={docs}>
+                      <span style={`width:${docs}%`} />
+                    </div>
+                  ) : (
+                    <span class="muted small">Belum ada daftar kelengkapan</span>
+                  )}
+                </div>
+                <div class="card-foot">
+                  {deadline ? <span class={`deadline ${deadline.tone}`}>{deadline.text}</span> : <span>Tanpa tenggat</span>}
+                  <span class="portal-open">Lihat progres →</span>
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</Layout>
